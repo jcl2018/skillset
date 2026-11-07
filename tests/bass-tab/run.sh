@@ -24,6 +24,15 @@ python3 "$scripts/tab2pdf.py" "$out/fixture.tab" -o "$out/b.pdf" >/dev/null
 cmp -s "$out/a.pdf" "$out/b.pdf" || fail "PDF is not deterministic"
 [ "$(grep -ac '/Type /Page ' "$out/a.pdf")" = 1 ] || fail "expected a 1-page PDF"
 
+# 3b. Non-Latin text: refused without Pillow (never a silent "???" title), written once Pillow is present.
+{ printf "title: \346\265\213\350\257\225\n"; grep -v "^title: " "$out/fixture.tab"; } > "$out/cjk.tab"
+if python3 -c 'import PIL' 2>/dev/null; then
+  python3 "$scripts/tab2pdf.py" "$out/cjk.tab" -o "$out/cjk.pdf" >/dev/null 2>&1 || true
+else
+  if python3 "$scripts/tab2pdf.py" "$out/cjk.tab" -o "$out/cjk.pdf" >/dev/null 2>&1; then fail "lossy PDF written without --allow-lossy"; fi
+  python3 "$scripts/tab2pdf.py" "$out/cjk.tab" -o "$out/cjk.pdf" --allow-lossy >/dev/null 2>&1 || fail "--allow-lossy did not write"
+fi
+
 # 4. Every script stays under 20 KB.
 for f in "$scripts"/*.py; do
   [ "$(wc -c < "$f")" -lt 20480 ] || fail "$f is 20 KB or more"

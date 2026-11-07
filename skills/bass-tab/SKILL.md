@@ -6,7 +6,9 @@ description: Turns sources for a song (tab screenshots, PDFs, links, notes) into
 # bass-tab
 
 Turns what a source actually shows into a song data file, then renders a compact bass tab (`.tab`) and a
-print-ready PDF in one fixed format. Needs `python3` only (Pillow is optional, for non-Latin titles).
+print-ready PDF in one fixed format. Needs `python3` only; Pillow is needed too when a title or artist is non-Latin (e.g. Chinese). Without it
+`tab2pdf.py` refuses rather than print `?`; install it in a venv (`python3 -m venv v && v/bin/pip install pillow`) and run
+the script with that python, or pass `--allow-lossy`.
 Scripts live in `scripts/` next to this file; run them from this skill's folder or give full paths.
 
 ## The song file
