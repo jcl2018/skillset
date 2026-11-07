@@ -33,6 +33,13 @@ else
   python3 "$scripts/tab2pdf.py" "$out/cjk.tab" -o "$out/cjk.pdf" --allow-lossy >/dev/null 2>&1 || fail "--allow-lossy did not write"
 fi
 
+# 3c. Compact chart: section labels, collapsed repeats, lyric alignment, the 2-page limit (invented songs).
+python3 "$here/chart_test.py" || fail "chart renderer test failed"
+python3 "$scripts/chart2pdf.py" "$here/chart-song.py" -o "$out/c1.pdf" >/dev/null
+python3 "$scripts/chart2pdf.py" "$here/chart-song.py" -o "$out/c2.pdf" >/dev/null
+cmp -s "$out/c1.pdf" "$out/c2.pdf" || fail "chart PDF is not deterministic"
+if python3 "$scripts/chart2pdf.py" "$here/chart-huge.py" -o "$out/h.pdf" >/dev/null 2>&1; then fail "oversize song was not refused"; fi
+
 # 4. Every script stays under 20 KB.
 for f in "$scripts"/*.py; do
   [ "$(wc -c < "$f")" -lt 20480 ] || fail "$f is 20 KB or more"

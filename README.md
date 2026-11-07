@@ -6,7 +6,7 @@ scripts and templates it needs, so it is portable across Claude Code, Codex and 
 
 | skill | what it does |
 |---|---|
-| [`bass-tab`](skills/bass-tab/SKILL.md) | Turns sources for a song into a compact bass tab in a fixed format, plus a PDF |
+| [`bass-tab`](skills/bass-tab/SKILL.md) | Turns sources for a song into a compact bass tab plus a 1-2 page play-along chart PDF (sections, repeats, chords, lyrics) |
 
 ## Install a skill
 
@@ -30,11 +30,11 @@ a song file from what the sources show, then renders it:
 ```sh
 cd skills/bass-tab
 python3 scripts/tabgen.py song/song.py song/song.tab --bars 3 --cut compact
-python3 scripts/tab2pdf.py song/song.tab -o song/song.pdf
+python3 scripts/chart2pdf.py song/song.py -o song/song.pdf   # 1-2 page chart
 ```
 
 Start a song file from `skills/bass-tab/templates/song-template.py`. Links to recordings contribute a
-title, tempo and section names at most; the skill never invents bars and never fills the lyrics row.
+title, tempo and section names at most; the skill never invents bars or lyrics (lyrics come from the owner or from what a source visibly shows).
 
 ## Check
 
