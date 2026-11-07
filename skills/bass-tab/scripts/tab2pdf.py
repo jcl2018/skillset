@@ -301,6 +301,8 @@ def main(argv=None) -> int:
     ap.add_argument("--section-break-frac", type=float, default=SECTION_BREAK_FRAC,
                     help="start a section on a fresh page when less than this "
                          "fraction of the column is left (0 disables)")
+    ap.add_argument("--allow-lossy", action="store_true",
+                    help="write the PDF even if non-Latin text had to become '?'")
     ap.add_argument("--check", action="store_true",
                     help="parse + report, write nothing")
     args = ap.parse_args(argv)
@@ -320,6 +322,11 @@ def main(argv=None) -> int:
 
     for wmsg in _WARNINGS:
         print("warning: %s" % wmsg, file=sys.stderr)
+    if not args.allow_lossy and any(w.startswith("lossy:") for w in _WARNINGS):
+        print("refused: non-Latin text would print as '?'. Install Pillow "
+              "(python3 -m venv v && v/bin/pip install pillow) or pass --allow-lossy.",
+              file=sys.stderr)
+        return 2
     report = "  ".join(f"{k}={v}" for k, v in stats.items())
     if args.check:
         print(f"OK (check, nothing written)  {report}")

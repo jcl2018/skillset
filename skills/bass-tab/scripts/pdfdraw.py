@@ -128,6 +128,8 @@ class PDF:
             )
             return
         if not self.raster.available():
+            _warn("lossy: non-Latin text needs Pillow and a CJK font; printed as '?': %s"
+                  % s.strip()[:40])
             self.text(x, y, s.encode("ascii", "replace").decode("ascii"),
                       font, size, gray)
             return
