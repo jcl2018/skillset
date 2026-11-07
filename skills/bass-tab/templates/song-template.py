@@ -2,7 +2,8 @@
 
 Frets are written per slot as {string: (fret, mark)}; None is "still ringing / nothing struck",
 {} is an explicit rest. A repeated figure is written ONCE and stamped wherever it is played.
-Render with:  python3 scripts/tabgen.py song.py song.tab --bars 3 --cut compact
+Chart PDF:  python3 scripts/chart2pdf.py song.py -o song.pdf
+Text tab:   python3 scripts/tabgen.py song.py song.tab --bars 3 --cut compact
 """
 
 R = None  # a rest/ring slot
@@ -31,7 +32,8 @@ BARS = {1: steady("E", 0), 2: steady("A", 0)}
 CHORDS = {1: "E", 2: "A"}
 SECTIONS = {1: {"name": "Verse", "notes": [], "same_as": None}}
 
-# The user's own row. Never fill it from a source; leave it empty.
+# Words under each bar: {bar number: "words"}. Only from the owner or what a source visibly shows
+# (e.g. on-screen lyrics); never invented. Leave it empty when no source shows them.
 LYRICS = {}
 
 # Optional: what the sheet does not know. Printed in every cut.
