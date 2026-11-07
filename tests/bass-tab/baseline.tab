@@ -1,0 +1,35 @@
+title: Fixture Song
+artist: Fixture Artist
+key: E major
+tempo: 100 BPM
+time: 4/4
+tuning: E A D G (standard 4-string)
+source: invented for the skill baseline
+legend: h = hammer-on  |  p = pull-off  |  s = slide  |  ~ = let ring  |  x = dead note  |  8 columns per bar = 8th notes
+
+[Verse  -  bars 1-4   .  0:00]
+
+  E                        A                        B
+  1-2  x2                  3                        4
+R|8--8--8--8--8--8--8--8--|8--8--8--8--8--8--8--8--|8--8--8--8--8--8--8--8--|
+G|------------------------|------------------------|------------------------|
+D|------------------------|------------------------|------------------------|
+A|------------------------|0--0--0--0--0--0--0--0--|------------------------|
+E|0--0--0--0--0--0--0--0--|------------------------|7--7--7--7--7--7--7--7--|
+
+[Chorus  -  bars 5-8   .  0:09]
+
+  E                        A                        B
+  5-6  x2                  7                        8
+R|8--8--8--8--8--8--8--8--|8--8--8--8--8--8--8--8--|8--8--8--8--8--8--8--8--|
+G|------------------------|------------------------|------------------------|
+D|------------------------|------------------------|------------------------|
+A|------------------------|0--0--0--0--0--0--0--0--|------------------------|
+E|0--0--0--0--0--0--0--0--|------------------------|7--7--7--7--7--7--7--7--|
+
+[Checked]
+> bars      8 encoded (1-8), all 8 slots
+> repeats   compact cut; 6 of 8 bar columns printed; partition exact; every repeat verified equal
+> marks     none - all in the template vocabulary
+> scale     stave lines 77 chars, 3 bars/system, within the 100-char bound
+> key       E major; every note diatonic
