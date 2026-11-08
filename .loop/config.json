@@ -1,0 +1,24 @@
+{
+  "base": "main",
+  "checks": [
+    "python3 -m unittest discover -s tests"
+  ],
+  "agent_command": [
+    "claude",
+    "-p"
+  ],
+  "parallel": 3,
+  "risky_paths": [
+    "^\\.github/",
+    "(^|/)auth",
+    "(^|/)migrations?/",
+    "(^|/)(schema|data)\\b"
+  ],
+  "version_file": "VERSION",
+  "wiki_dir": "docs/wiki",
+  "pr_bumps_version": false,
+  "mend": false,
+  "resume_on_limit": false,
+  "criteria": true,
+  "regression_cron": "17 9 * * *"
+}

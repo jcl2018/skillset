@@ -1,0 +1,3 @@
+# id	level	command	goal	seen_red	description
+hom-checks	land	python3 -m unittest discover -s tests	HOM-1		The repo's checks pass.
+ski-checks	land	python3 -m unittest discover -s tests	SKI-1		The repo's checks pass.
