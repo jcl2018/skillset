@@ -1,0 +1,32 @@
+{
+  "base": "main",
+  "agent_command": [
+    "claude",
+    "-p"
+  ],
+  "parallel": 0,
+  "cadence": "30",
+  "auto_approve": true,
+  "auto_merge": true,
+  "pr_bumps_version": false,
+  "version_file": "VERSION",
+  "routines": [],
+  "regression_cron": "17 9 * * *",
+  "criteria": true,
+  "criteria_max": 6,
+  "wiki_dir": "docs/wiki",
+  "risky_paths": [
+    "^\\.github/",
+    "(^|/)auth",
+    "(^|/)migrations?/",
+    "(^|/)(schema|data)\\b"
+  ],
+  "step_limit": 0,
+  "token_budget": 0,
+  "mend": false,
+  "mend_wait": 120,
+  "max_tries": 3,
+  "resume_on_limit": false,
+  "limit_wait": 1800,
+  "watch_interval": 20
+}
