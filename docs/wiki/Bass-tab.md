@@ -61,7 +61,7 @@ Rendering the same song file twice gives byte-identical PDFs.
 
 #### BAS-5
 
-A non-Latin title never prints as question marks: without Pillow the tab PDF is refused unless lossy output is asked for.
+Without Pillow, a tab PDF with a non-Latin title is refused rather than printed with question marks, unless lossy output is asked for.
 
 - Given a tab with a Chinese title and no Pillow installed, when its PDF is rendered, then it is refused unless lossy output is asked for, and written when it is. — [bas-nonlatin](../../.loop/regression.tsv), both, PASS 2026-11-09, seen failing 2026-11-09
 
