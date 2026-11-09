@@ -1,29 +1,21 @@
 <!-- workflow-docs -->
 # Home
 
-Review: **Unreviewed**
+skillset holds small, standalone agent skills. Each skill is a folder under `skills/` with a `SKILL.md` and the
+scripts and templates it needs, so it works in Claude Code, Codex and other agents that read `SKILL.md`.
 
-## Problem
+## Skills
 
-Small, standalone agent skills. Each skill is a folder under `skills/` with a `SKILL.md` and whatever
+Each skill has a page that says what it is for, what it promises and which tests hold each promise.
 
-## Requirements
+- [Bass-tab](Bass-tab): turns sources for a song into a compact bass tab and a one-or-two-page play-along chart PDF.
 
-- HOM-1: **Unreviewed** The repo checks pass with the Home change in.
+## Install a skill
 
-## Non-goals
+Copy the skill's folder into your agent's skills directory, for example `cp -R skills/bass-tab ~/.claude/skills/bass-tab`
+for Claude Code. Skills need `python3`; bass-tab also needs Pillow for non-Latin titles or lyrics.
 
-- Write this page from what is really in the repo.
+## Check
 
-## Success metrics
-
-- Write this page from what is really in the repo.
-
-## Tests
-
-#### HOM-1
-
-The repo checks pass with the Home change in.
-
-- Given the Home change, when the repo's checks run, then they pass. — [hom-checks](../../.loop/regression.tsv), both, not run, seen failing no
-- **not enforced**: no passing test
+Run `sh tests/bass-tab/run.sh` from the repo root. The rows in `.loop/regression.tsv` run the same checks one promise
+at a time, and the nightly regression workflow runs them on GitHub.
