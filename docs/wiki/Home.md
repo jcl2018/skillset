@@ -13,7 +13,7 @@ Each skill has a page that says what it is for, what it promises and which tests
 ## Install a skill
 
 Copy the skill's folder into your agent's skills directory, for example `cp -R skills/bass-tab ~/.claude/skills/bass-tab`
-for Claude Code. Skills need `python3`; bass-tab also needs Pillow for non-Latin titles or lyrics.
+for Claude Code. Skills need `python3`; bass-tab also uses Pillow for a non-Latin title, artist or lyrics.
 
 ## Check
 

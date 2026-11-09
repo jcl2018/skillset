@@ -20,7 +20,7 @@ cp -R skills/bass-tab <project>/.claude/skills/bass-tab
 ```
 
 For Codex or another agent that reads `SKILL.md`, put the folder wherever that agent looks for skills
-(for example `~/.codex/skills/` or `.agents/skills/`). Skills use `python3` and the standard library; bass-tab also needs Pillow for a non-Latin title or lyrics.
+(for example `~/.codex/skills/` or `.agents/skills/`). Skills use `python3` and the standard library; bass-tab also uses Pillow for a non-Latin title, artist or lyrics, and without it refuses rather than print `?` unless told `--allow-lossy`.
 
 ## Use bass-tab
 

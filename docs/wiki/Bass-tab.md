@@ -20,7 +20,7 @@ The skill turns what the sources actually show into one song file, then renders 
 - BAS-2: **Unreviewed** The chart shows a bold label where each section starts, a repeated figure drawn once with its count, and each lyric under its own bar.
 - BAS-3: **Unreviewed** The chart fits two US-Letter pages with tab digits at 9 pt or more, and a song that cannot fit is refused with a line naming it.
 - BAS-4: **Unreviewed** Rendering the same song file twice gives byte-identical PDFs.
-- BAS-5: **Unreviewed** A non-Latin title never prints as question marks: without Pillow the tab PDF is refused unless lossy output is asked for.
+- BAS-5: **Unreviewed** Without Pillow, a tab PDF with a non-Latin title is refused rather than printed with question marks, unless lossy output is asked for.
 - BAS-6: **Unreviewed** A song file holds only what a source shows; no bar or lyric comes from memory or a web search.
 
 ## Non-goals
