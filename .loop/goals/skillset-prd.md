@@ -22,3 +22,20 @@ Frozen. A wrong done line needs a new goal.
    Expect: a link to Bass-tab under Skills.
 3. Run `sh tests/bass-tab/run.sh` from the repo root.
    Expect: it ends with `PASS: bass-tab fixture renders in the predefined format (tab + PDF)`.
+
+## Notes
+
+- Owner decisions, relayed verbatim: "I also want to turn on the auto merge." and, approving the plan (option B, with
+  per-requirement rows): "Yes, I want to. I want to choose B, approve it, and turn on auto approve." So
+  `.loop/config.json` sets `"auto_merge": true` and `"auto_approve": true`.
+- Setup was run fresh rather than merging the old local `workflow-setup` branch, which predates the PRD page format.
+  This version of the config has no `checks` key; the repo's test check is the land row `repo-suite`
+  (`sh tests/bass-tab/run.sh`).
+- Private-name scan: the template's scan pattern was run over every tracked file, file name and commit on this branch,
+  with one term removed from the pattern because it is this repo's own skill name. No match. The committed
+  `repo-public` row checks only for home-directory paths and personal email addresses, so the public repo does not
+  carry a list of private terms.
+- The PRD page and its requirements stay Unreviewed for the owner. BAS-6 has no automated test and shows as not enforced.
+- GitHub milestones are not created here.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
