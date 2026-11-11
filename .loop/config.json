@@ -2,7 +2,8 @@
   "base": "main",
   "agent_command": [
     "claude",
-    "-p"
+    "-p",
+    "--allowedTools=Bash,Read,Write,Edit,Skill,Glob,Grep"
   ],
   "parallel": 0,
   "cadence": "30",
@@ -28,5 +29,8 @@
   "max_tries": 3,
   "resume_on_limit": false,
   "limit_wait": 1800,
-  "watch_interval": 20
+  "watch_interval": 20,
+  "checks": [
+    "sh tests/bass-tab/run.sh"
+  ]
 }
