@@ -8,6 +8,20 @@ scripts and templates it needs, so it is portable across Claude Code, Codex and 
 |---|---|
 | [`bass-tab`](skills/bass-tab/SKILL.md) | Turns sources for a song into a compact bass tab plus a 1-2 page play-along chart PDF (sections, repeats, chords, lyrics) |
 
+## How to use
+
+Say these to your agent. Each skill's wiki page has the exact commands.
+
+### How to use Bass tab
+
+| You say | What happens |
+|---|---|
+| "Make a bass tab of this song from these sources" | A song file is written from what the sources show, then the compact tab and a one-or-two-page chart PDF are made. |
+| "Fix bar 12 in this tab and print it again" | The song file is corrected once, so every copy of a repeated figure changes, and the chart is printed again. |
+| "Make the chart for this 5-string song with a low B" | The tab draws five string lines, labeled to match the tuning. |
+| "What's in the header and where did each part come from?" | You get the header (title, artist, BPM, key, time signature, tuning, instrument and sources, "not shown" where a source doesn't say) and the source report. |
+| "Which bars are missing or guessed?" | The source report lists missing bars, estimated bars and which source gave each section. |
+
 ## Install a skill
 
 Copy the skill's folder into your agent's skills directory.

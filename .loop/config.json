@@ -2,7 +2,8 @@
   "base": "main",
   "agent_command": [
     "claude",
-    "-p"
+    "-p",
+    "--allowedTools=Bash,Read,Write,Edit,Skill,Glob,Grep"
   ],
   "parallel": 0,
   "cadence": "30",
@@ -12,8 +13,16 @@
   "version_file": "VERSION",
   "routines": [],
   "regression_cron": "17 9 * * *",
+  "health_cron": "47 */4 * * *",
+  "judge_env": "ANTHROPIC_API_KEY",
+  "judge_setup": "",
+  "digest_owner": "",
+  "digest_mail": "cloudflare",
+  "smtp_host": "smtp.gmail.com",
+  "smtp_port": 465,
+  "review_depth": "full",
   "criteria": true,
-  "criteria_max": 6,
+  "criteria_max": 10,
   "wiki_dir": "docs/wiki",
   "risky_paths": [
     "^\\.github/",
@@ -22,11 +31,31 @@
     "(^|/)(schema|data)\\b"
   ],
   "step_limit": 0,
+  "goal_lane_minutes": 10,
+  "goal_levels": "land",
+  "ci_levels": "nightly",
   "token_budget": 0,
+  "test_budget_minutes": 15,
+  "step_budget_minutes": 30,
+  "stale_branch_days": 14,
   "mend": false,
   "mend_wait": 120,
   "max_tries": 3,
   "resume_on_limit": false,
   "limit_wait": 1800,
-  "watch_interval": 20
+  "watch_interval": 20,
+  "agent_files": [
+    "CLAUDE.md",
+    "AGENTS.md"
+  ],
+  "template_repo": "",
+  "reply_hook": true,
+  "govern_hook": true,
+  "full_auto": true,
+  "pool_size": 20,
+  "silent_minutes": 30,
+  "_help": {
+    "review_depth": "full runs the plan and review skills' whole pipeline and refuses a condensed one; condensed allows a shorter run.",
+    "criteria_max": "Most criteria a wiki page may hold, 1 to 50, default 10; docs check and health fail a page over it."
+  }
 }
