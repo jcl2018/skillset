@@ -16,3 +16,10 @@ Frozen. A wrong done line needs a new goal.
 ## Verify by hand
 
 <!-- One or more numbered steps a person can follow, each with an Expect: line. Every release needs this. -->
+
+1. Run `python3 skills/bass-tab/scripts/chart2pdf.py tests/bass-tab/v2-report.py -o /tmp/v2-report.pdf` and open the PDF.
+   Expect: a title row, one header line with BPM, Key, Time signature, Tuning, Instrument and Sources, a four-line stave labeled G D A E, and a "Source report" block under it listing missing bars 7, estimated bars 3 and 4, and a source for Verse but "not shown" for Chorus.
+2. Run `python3 skills/bass-tab/scripts/chart2pdf.py tests/bass-tab/v2-five.py -o /tmp/v2-five.pdf` and open the PDF.
+   Expect: a five-line stave labeled G D A E B, and "not shown" for every header field the fixture leaves out.
+3. Copy `skills/bass-tab/templates/chart-format.json`, change the first header label from "BPM" to "Tempo" and `missing_text` to "unknown", then run `chart2pdf.py tests/bass-tab/v2-sparse.py -o /tmp/v2-sparse.pdf --template YOUR_COPY`.
+   Expect: the header reads "Tempo: unknown" first, and every other missing field reads "unknown".

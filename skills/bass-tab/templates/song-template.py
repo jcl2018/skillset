@@ -23,6 +23,9 @@ META = {
     "tuning": "E A D G (standard 4-string)",
     "source": "where the notes were read from",
     "legend": "h = hammer-on  |  p = pull-off  |  s = slide  |  ~ = let ring  |  x = dead note  |  8 columns per bar = 8th notes",
+    # "strings": 5,                # 5-string bass (low B): the chart draws five labeled lines
+    # "instrument": "4-string bass",
+    # "sources": ["a link", "a screenshot"],   # instead of "source", never both
     # "slots": 16,                 # 16th-note resolution; use --bars 1 when rendering
     # "open": {"E": "D"},          # drop D: the bottom row prints as D
 }
@@ -35,6 +38,9 @@ SECTIONS = {1: {"name": "Verse", "notes": [], "same_as": None}}
 # Words under each bar: {bar number: "words"}. Only from the owner or what a source visibly shows
 # (e.g. on-screen lyrics); never invented. Leave it empty when no source shows them.
 LYRICS = {}
+
+# Optional: the source report, printed after the last line. Absent parts print "not shown".
+# REPORT = {"missing": [7], "estimates": [3, 4], "sections": {1: "a link"}}
 
 # Optional: what the sheet does not know. Printed in every cut.
 # CAVEATS = [("Not verified", ["Rhythm was read by eye.", "Frets were not measured."])]
