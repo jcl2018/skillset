@@ -1,0 +1,39 @@
+{
+  "missing_text": "not shown",
+  "title_row": {"left": "title", "right": "artist", "size": 17.0, "right_size": 10.0},
+  "header": [
+    {"field": "tempo", "label": "BPM"},
+    {"field": "key", "label": "Key"},
+    {"field": "time", "label": "Time signature"},
+    {"field": "tuning", "label": "Tuning"},
+    {"field": "instrument", "label": "Instrument"},
+    {"field": "sources", "label": "Sources"}
+  ],
+  "header_size": 8.0,
+  "report": {
+    "heading": "Source report",
+    "size": 8.0,
+    "parts": [
+      {"key": "missing", "label": "Missing bars"},
+      {"key": "estimates", "label": "Estimated bars"},
+      {"key": "sections", "label": "Source per section"}
+    ],
+    "none_text": "none"
+  },
+  "section": {"size": 10.0, "repeat": "x{n}", "ref": "= {other} (bars {a}-{b})"},
+  "staff": {"label_size": 7.5, "gap": 1.05, "clef": true},
+  "chords": {"size": 9.0},
+  "lyrics": {"size": 8.5},
+  "ladder": [
+    {"fs": 10.0, "pad": 1.0, "secref": false, "maxp": 4, "rhythm": true},
+    {"fs": 10.0, "pad": 0.8, "secref": false, "maxp": 4, "rhythm": true},
+    {"fs": 10.0, "pad": 0.8, "secref": true, "maxp": 4, "rhythm": true},
+    {"fs": 10.0, "pad": 0.6, "secref": true, "maxp": 8, "rhythm": true},
+    {"fs": 10.0, "pad": 0.6, "secref": true, "maxp": 8, "rhythm": false},
+    {"fs": 9.0, "pad": 1.0, "secref": false, "maxp": 4, "rhythm": true},
+    {"fs": 9.0, "pad": 0.8, "secref": false, "maxp": 4, "rhythm": true},
+    {"fs": 9.0, "pad": 0.8, "secref": true, "maxp": 4, "rhythm": true},
+    {"fs": 9.0, "pad": 0.6, "secref": true, "maxp": 8, "rhythm": true},
+    {"fs": 9.0, "pad": 0.6, "secref": true, "maxp": 8, "rhythm": false}
+  ]
+}

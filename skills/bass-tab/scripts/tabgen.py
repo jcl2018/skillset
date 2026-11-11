@@ -81,8 +81,9 @@ def build(song, bars_per_system=3, cut="full"):
 
     L = []
     for k in ("title", "artist", "key", "tempo", "time", "tuning", "source", "legend"):
-        if M.get(k):
-            L.append("%s: %s" % (k, "%s BPM" % M[k] if k == "tempo" else M[k]))
+        v = M.get(k) or ("; ".join(M["sources"]) if k == "source" and M.get("sources") else "")
+        if v:
+            L.append("%s: %s" % (k, "%s BPM" % v if k == "tempo" else v))
     L.append("")
     if not compact and getattr(song, "HEADER", None):
         L.append("[How to read this]")
@@ -182,6 +183,14 @@ def main(argv=None):
     n = int(a[a.index("--bars") + 1]) if "--bars" in a else 3
     cut = a[a.index("--cut") + 1] if "--cut" in a else "full"
     song = load_song(a[0])
+    meta, name = song.META, song.META.get("title", a[0])
+    if meta.get("strings", 4) != 4:
+        print("tabgen: %s is %s-string; render it with chart2pdf.py" % (name, meta.get("strings")),
+              file=sys.stderr)
+        return 2
+    if meta.get("source") and meta.get("sources"):
+        print("%s sets both source and sources; keep one" % name, file=sys.stderr)
+        return 2
     text = build(song, n, cut)
     open(a[1], "w", encoding="utf-8").write(text)
     want = int(song.META.get("slots", SLOTS))

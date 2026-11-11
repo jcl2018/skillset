@@ -51,13 +51,21 @@ def rhythm_cells(bar, slots=SLOTS):
 
 # Standard tuning, as semitone offsets from C. The note under a bar is DERIVED
 # from the fretboard, so it cannot disagree with the notes printed beneath it.
-_OPEN = {"E": 4, "A": 9, "D": 2, "G": 7}
+_OPEN = {"E": 4, "A": 9, "D": 2, "G": 7, "B": 11}
 
 
 _NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
 
 _LOW_TO_HIGH = ["E", "A", "D", "G"]
+
+
+def strings_for(meta):
+    """The song's rows, low to high: E A D G, or B E A D G when META["strings"] is 5."""
+    n = meta.get("strings", 4)
+    if n not in (4, 5):
+        raise ValueError("META strings must be 4 or 5, not %r" % (n,))
+    return (["B"] if n == 5 else []) + _LOW_TO_HIGH
 
 
 def open_pitches(meta):
@@ -73,11 +81,12 @@ def open_pitches(meta):
     fingered and every interval is unchanged, which is how such a song is
     written. Only a tuning that changes the intervals BETWEEN strings does.
     """
-    pcs = dict(_OPEN)
+    rows = strings_for(meta)
+    pcs = {r: _OPEN[r] for r in rows}
     for row, note in (meta.get("open") or {}).items():
         if row not in pcs or note not in _NAMES:
             raise ValueError("META open %r: %r is not a row (%s) or %r is not a note (%s)"
-                             % ({row: note}, row, "/".join(_LOW_TO_HIGH), note, " ".join(_NAMES)))
+                             % ({row: note}, row, "/".join(rows), note, " ".join(_NAMES)))
         pcs[row] = _NAMES.index(note)
     return pcs
 
@@ -87,7 +96,7 @@ def row_label(meta, row):
     return (meta.get("open") or {}).get(row, row)
 
 
-def string_for(fret, chord):
+def string_for(fret, chord, rows=None):
     """Which string carries this fret, given the chord the bar sits on.
 
     A fret number ALONE never fixes a note: fret 7 is B on the E string and E on
@@ -101,18 +110,19 @@ def string_for(fret, chord):
     that agree on no string is a contradiction in the reading, and raises here
     rather than being silently printed on whichever line was typed.
     """
-    hits = [st for st in _LOW_TO_HIGH
+    rows = rows or _LOW_TO_HIGH
+    hits = [st for st in rows
             if _NAMES[(_OPEN[st] + fret) % 12] == chord]
     if not hits:
         raise ValueError(
             "fret %d sounds %s on no string - chord %r is inconsistent with it "
             "(fret %d gives %s)" % (fret, chord, chord, fret,
             "/".join("%s=%s" % (st, _NAMES[(_OPEN[st] + fret) % 12])
-                     for st in _LOW_TO_HIGH)))
+                     for st in rows)))
     return hits[0]
 
 
-def bar_note(bar, opens=None):
+def bar_note(bar, opens=None, rows=None):
     """The lowest sounding note of the bar's first struck slot, or "".
 
     Handles what a naive slot-0 lookup cannot: a bar whose first slots are held
@@ -124,7 +134,7 @@ def bar_note(bar, opens=None):
     for slot in bar:
         if not slot:
             continue
-        for st in _LOW_TO_HIGH:
+        for st in rows or _LOW_TO_HIGH:
             if st in slot:
                 fret = slot[st][0]
                 if isinstance(fret, int):

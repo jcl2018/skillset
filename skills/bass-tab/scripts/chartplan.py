@@ -7,6 +7,7 @@ section labels, collapsed repeats, chord names and per-bar lyrics.
 
 from __future__ import annotations
 
+import chartformat
 from tabcore import section_ranges
 from pdfkit import string_width
 
@@ -16,13 +17,16 @@ UNIT = 0.6                     # Courier digit advance, in em
 class Cfg:
     """One rung of the fitting ladder. Spacing and repeats go first, the font last."""
 
-    def __init__(self, fs, pad, secref, maxp, rhythm):
-        self.fs, self.pad, self.secref, self.maxp, self.rhythm = fs, pad, secref, maxp, rhythm
+    def __init__(self, fs, pad, secref, maxp, rhythm, t=None):
+        self.fs, self.pad, self.secref, self.maxp, self.rhythm, self.t = fs, pad, secref, maxp, rhythm, t
 
 
-LADDER = [Cfg(fs, *rest) for fs in (10.0, 9.0) for rest in (
-    (1.0, False, 4, True), (0.8, False, 4, True), (0.8, True, 4, True),
-    (0.6, True, 8, True), (0.6, True, 8, False))]
+def ladder(t):
+    """The fitting ladder from a template; rungs under 9 pt were dropped by the loader."""
+    return [Cfg(r.fs, r.pad, r.secref, r.maxp, r.rhythm, t) for r in t.ladder]
+
+
+LADDER = ladder(chartformat.load())
 
 
 def slot_widths(bar, cfg):
@@ -42,10 +46,10 @@ def bar_width(num, song, cfg):
     need = 0.0
     lyr = song["lyrics"].get(num) or ""
     if lyr:
-        need = string_width(lyr, "F3", 8.5) + 4
+        need = string_width(lyr, "F3", cfg.t.lyrics.size) + 4
     ch = song["chords"].get(num) or ""
     if ch:
-        need = max(need, string_width(ch, "F2", 9.0) + 4)
+        need = max(need, string_width(ch, "F2", cfg.t.chords.size) + 4)
     return max(w, need)
 
 
@@ -98,7 +102,8 @@ def plan_units(song, cfg, limit):
             if cfg.secref and b > a else None
         if ref is not None:
             units.append({"kind": "ref", "label": name,
-                          "text": "= %s (bars %d-%d)" % (song["sections"][ref]["name"], *ranges[ref])})
+                          "text": cfg.t.section.ref.format(other=song["sections"][ref]["name"],
+                                                           a=ranges[ref][0], b=ranges[ref][1])})
         else:
             for k, (lo, p, reps) in enumerate(collapse(list(range(a, b + 1)), song, cfg, starts, limit)):
                 units.append({"kind": "bars", "bars": list(range(lo, lo + p)), "reps": reps,
@@ -109,7 +114,7 @@ def plan_units(song, cfg, limit):
     return units
 
 
-def pack(units, avail):
+def pack(units, avail, lab_size=10.0):
     """Greedy lines. A label that would run into the previous label starts a new line."""
     lines, cur, x, label_end = [], [], 0.0, -1.0
     for u in units:
@@ -119,7 +124,7 @@ def pack(units, avail):
             lines.append([u])
             cur, x, label_end = [], 0.0, -1.0
             continue
-        lab_w = string_width(u["label"], "F2", 10.0) + 6 if u["label"] else 0
+        lab_w = string_width(u["label"], "F2", lab_size) + 6 if u["label"] else 0
         if cur and (x + u["width"] > avail or (u["label"] and x < label_end)):
             lines.append(cur)
             cur, x, label_end = [], 0.0, -1.0
