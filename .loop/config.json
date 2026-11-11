@@ -22,7 +22,7 @@
   "smtp_port": 465,
   "review_depth": "full",
   "criteria": true,
-  "criteria_max": 6,
+  "criteria_max": 10,
   "wiki_dir": "docs/wiki",
   "risky_paths": [
     "^\\.github/",

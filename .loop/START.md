@@ -23,7 +23,7 @@ One session governs and the others build: the operation session assigns goals, w
 
 ## Docs
 
-Feature pages live in `docs/wiki`, one PRD page per feature with numbered requirements, at most 6 each. The criteria contract is `true`. The docs command finds stale pages, and the release step rewrites them.
+Feature pages live in `docs/wiki`, one PRD page per feature with numbered requirements, at most 10 each. The criteria contract is `true`. The docs command finds stale pages, and the release step rewrites them.
 
 ## Regression
 
@@ -41,7 +41,7 @@ Every repo setting, its value and its one-line explanation is in the Settings ta
 
 | Feature | Milestone | What it is for | How to use it |
 |---|---|---|---|
-| Bass-tab | none | Bass players who learn songs from tab screenshots, PDFs and notes need one compact tab they can trust and a chart they can print and play along with. | "Make a bass tab of this song from these screenshots" writes the song file from the sources and renders the tab and the chart PDF. / "Fix bar 12 in this tab and print it again" corrects the song file once, so every copy of a repeated figure changes, and renders again. |
+| Bass-tab | none | I learn bass lines from many places: tab videos on YouTube and Bilibili, tab sites like Songsterr, other sites I find, screenshots and PDFs. | `python3 skills/bass-tab/scripts/chart2pdf.py SONG -o OUT [--paper letter\|a4] [--collapse-sections] [--allow-lossy]` — Renders a song file to the play-along chart PDF (US-Letter by default) and prints `wrote OUT  (N bytes)  pages=N  tab_font_pt=N  lines=N  section_refs=N` (exit 0). / `python3 skills/bass-tab/scripts/tabgen.py SONG OUT [--bars N] [--cut compact\|full]` — Writes the text tab (3 bars per line and the full cut by default; `--cut compact` is the sheet) and prints `bars=N range=A-B malformed=none  widths=[77]` (exit 0). / `python3 skills/bass-tab/scripts/tab2pdf.py TAB [-o OUT] [--paper a4\|letter] [--section-break-frac F] [--allow-lossy] [--check]` — Renders a text tab to the long one-bar-wide PDF (A4 by default, next to the tab when `-o` is left out) and prints `wrote OUT  (N bytes)  pages=N  tab_font_pt=N  longest_line=N  blocks=N  mono_lines=N  sections=N  rasterized_runs=N` (exit 0); with `--check` it writes nothing and prints `OK (check, nothing written)  pages=N ...` (exit 0). |
 
 ## Settings table
 
@@ -55,7 +55,7 @@ Every repo setting, its value and its one-line explanation is in the Settings ta
 | `cadence` | 30 | Minutes between check-ins of the operation session, 1 to 60, or off. |
 | `ci_levels` | nightly | Target of the scheduled and tag regression runs: nightly (every row) or land. |
 | `criteria` | true | true makes docs check enforce the PRD page contract (Problem, Requirements, Non-goals, Success metrics, Tests). |
-| `criteria_max` | 6 | Most criteria a wiki page may hold, 1 to 50, default 10; docs check and health fail a page over it. |
+| `criteria_max` | 10 | Most criteria a wiki page may hold, 1 to 50, default 10; docs check and health fail a page over it. |
 | `digest_mail` | cloudflare | How the round's digest is mailed: cloudflare (Email Service), smtp, or off; the address and keys live only in Actions secrets. |
 | `digest_owner` | none | Who the digest comment mentions; empty means the repo owner (an organisation notifies no one). |
 | `full_auto` | true | true lets the operation session answer a worker's routine decision with its recommended option, logged; risky ones wait. |

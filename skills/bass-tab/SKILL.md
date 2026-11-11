@@ -81,6 +81,16 @@ Follow this literally; it is the point of the skill.
 
 Rhythm read by eye and frets never measured are the known weak points; say so in `CAVEATS`.
 
+## Command map
+
+Asking the agent for one of these runs exactly the routine beside it, from the repo root. Wiki Usage lines use these.
+
+| Ask | Runs |
+|---|---|
+| `bass-tab chart` | `python3 skills/bass-tab/scripts/chart2pdf.py SONG -o OUT` |
+| `bass-tab tab` | `python3 skills/bass-tab/scripts/tabgen.py SONG OUT --bars N --cut compact` |
+| `bass-tab long-pdf` | `python3 skills/bass-tab/scripts/tab2pdf.py TAB -o OUT` |
+
 ## Suggestions
 
 After a transcription or on request, offer three kinds, clearly separated from the transcription:

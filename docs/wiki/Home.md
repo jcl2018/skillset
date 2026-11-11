@@ -1,21 +1,8 @@
 <!-- workflow-docs -->
-# Home
+# skillset
 
-skillset holds small, standalone agent skills. Each skill is a folder under `skills/` with a `SKILL.md` and the
-scripts and templates it needs, so it works in Claude Code, Codex and other agents that read `SKILL.md`.
+## Features
 
-## Skills
-
-Each skill has a page that says what it is for, what it promises and which tests hold each promise.
-
-- [Bass-tab](Bass-tab): turns sources for a song into a compact bass tab and a one-or-two-page play-along chart PDF.
-
-## Install a skill
-
-Copy the skill's folder into your agent's skills directory, for example `cp -R skills/bass-tab ~/.claude/skills/bass-tab`
-for Claude Code. Skills need `python3`; bass-tab also uses Pillow for a non-Latin title, artist or lyrics.
-
-## Check
-
-Run `sh tests/bass-tab/run.sh` from the repo root. The rows in `.loop/regression.tsv` run the same checks one promise
-at a time, and the nightly regression workflow runs them on GitHub.
+| Feature | What it does | How to use | Milestone |
+|---|---|---|---|
+| [Bass-tab](Bass-tab) | Turns my sources for a song into one compact bass tab and a one-or-two-page play-along chart PDF in the same format for every song. | [README](https://github.com/jcl2018/skillset#how-to-use-bass-tab) | none yet |
