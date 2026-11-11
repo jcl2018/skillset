@@ -1,7 +1,7 @@
 <!-- workflow-docs -->
 # Bass-tab
 
-Review: **Unreviewed**
+Review: **Reviewed 2026-11-11** <!-- prd P=6aa551e5 R=b0c8c702 N=a7f35ab3 M=708ea665 U=5eba4128 -->
 
 ## Problem
 - I learn bass lines from many places: tab videos on YouTube and Bilibili, tab sites like Songsterr, other sites I find, screenshots and PDFs.
@@ -16,39 +16,39 @@ Review: **Unreviewed**
 ## Requirements
 
 ### Functional
-- BAS-1: **Unreviewed** One format, Songsterr-style
+- BAS-1: **Reviewed 2026-11-11** One format, Songsterr-style <!-- reviewed ce865339 -->
   - Every song is written to the same song file and printed in one layout modeled on Songsterr's tab: one line per string, labeled at left; bar numbers above bars; time signatures where they change; rhythm marks under notes.
   - The layout is adjusted for print: several bars per line, repeats collapsed.
   - The fixture song's compact tab matches its recorded baseline exactly.
-- BAS-2: **Unreviewed** The whole song at a glance
+- BAS-2: **Reviewed 2026-11-11** The whole song at a glance <!-- reviewed 5abec8be -->
   - A bold label where each section starts.
   - A repeated figure is drawn once with its count (x4).
   - A section that repeats an earlier one is one line ("Chorus 2 = Chorus").
   - Chord names sit over their bars, and each lyric under its own bar.
-- BAS-6: **Unreviewed** Only what the sources show
+- BAS-6: **Reviewed 2026-11-11** Only what the sources show <!-- reviewed 5c058e5a -->
   - Sources are whatever I provide: any URL (such as a video, Songsterr or another tab site, or a lyrics or chord page), screenshots, PDFs, notes.
   - Bars, chords and lyrics come only from those sources, never from memory or a web search I didn't ask for.
   - A source it can't open or read is named in the source report, never guessed around.
-- BAS-7: **Unreviewed** Song header
+- BAS-7: **Reviewed 2026-11-11** Song header <!-- reviewed 2a38f7b4 -->
   - Every chart starts with the same header: title, artist, BPM, key, time signature, tuning, instrument (such as 5-string bass), and every source used.
   - A value the sources don't show reads "not shown", never a guess.
-- BAS-8: **Unreviewed** Source report
+- BAS-8: **Reviewed 2026-11-11** Source report <!-- reviewed 2e3e37c2 -->
   - Every transcription ends with a short report listing missing bars, bars that are estimates, and which source gave each section.
-- BAS-9: **Unreviewed** Four- and five-string bass
+- BAS-9: **Reviewed 2026-11-11** Four- and five-string bass <!-- reviewed 399a7de6 -->
   - The tab draws as many string lines as the song's bass has (4 or 5, such as a low B), labeled to match its tuning.
-- BAS-10: **Unreviewed** One format template
+- BAS-10: **Reviewed 2026-11-11** One format template <!-- reviewed cb0f29c2 -->
   - One template file defines the printed layout: header fields and order; how a section starts and how repeats and repeated sections show; the Songsterr-style staff; where chords and lyrics sit; spacing and fonts.
   - Every song renders through it, so changing it changes every song the same way.
   - A missing field prints "not shown", never a blank or a guess.
 
 ### Non-functional
-- BAS-3: **Unreviewed** Fits a printout
+- BAS-3: **Reviewed 2026-11-11** Fits a printout <!-- reviewed 7e8cd415 -->
   - Two US-Letter pages at most, tab digits at 9 pt or more.
   - Repeats collapse and spacing tightens before the font shrinks.
   - A song that still can't fit is refused with a line naming it.
-- BAS-4: **Unreviewed** Same input, same printout
+- BAS-4: **Reviewed 2026-11-11** Same input, same printout <!-- reviewed 91020a70 -->
   - Rendering the same song file twice gives byte-identical PDFs.
-- BAS-5: **Unreviewed** No silent question marks
+- BAS-5: **Reviewed 2026-11-11** No silent question marks <!-- reviewed 4ebe8a8d -->
   - A Chinese or other non-Latin title or lyric is never printed as question marks.
   - It renders correctly, or it's refused with a fix line.
 
