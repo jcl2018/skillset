@@ -35,7 +35,7 @@ Health checks the repo with fixed rules that give the same answer every time, on
 
 ## Settings
 
-Every repo setting, its value and its one-line explanation is in the Settings table below; add any missing one with `/workflow-setup fill-repo`. Private settings live in `~/.workflow-loop/` and never appear here.
+Every repo setting, its value and its one-line explanation is in the Settings table below; add any missing one with `/workflow-setup fill-repo`. Private settings live in `~/.workflow-loop/` and never appear here. The wiki Home page also carries a Settings section (each setting's meaning, how to set it, its default and this repo's value, marked overridden) and an Automation section (each routine on or off, its cadence, where it runs, its last run and any step you still owe); the README repeats both and names the template repo it came from. `/workflow-docs render` refreshes them.
 
 ## Features
 
@@ -58,6 +58,7 @@ Every repo setting, its value and its one-line explanation is in the Settings ta
 | `criteria_max` | 10 | Most criteria a wiki page may hold, 1 to 50, default 10; docs check and health fail a page over it. |
 | `digest_mail` | cloudflare | How the round's digest is mailed: cloudflare (Email Service), smtp, or off; the address and keys live only in Actions secrets. |
 | `digest_owner` | none | Who the digest comment mentions; empty means the repo owner (an organisation notifies no one). |
+| `feature_labels` | false | true makes health file and the regression workflow tag each issue feature:<Page> for its feature, and create that label; off by default, so issues carry their group or regression label only. |
 | `full_auto` | true | true lets the operation session answer a worker's routine decision with its recommended option, logged; risky ones wait. |
 | `goal_lane_minutes` | 10 | Minutes a goal's regression lane may take before health warns and its LANE line says over. |
 | `goal_levels` | land | Row levels a goal lane plans from: land, or nightly for land and nightly rows. |
@@ -86,6 +87,7 @@ Every repo setting, its value and its one-line explanation is in the Settings ta
 | `step_budget_minutes` | 30 | Minutes one review or ship step may take, 15 or more; a step at its limit finishes with what it has done and records what it left. |
 | `step_limit` | 0 | Seconds one flow step may run when the flow file sets no limit; 0 means the built-in limit. |
 | `template_repo` | none | The template's GitHub repo (owner/name) update reads releases from, when the installed package names none. |
+| `template_version` | 0.27.17 |  |
 | `test_budget_minutes` | 15 | Minutes one in-loop test run (qa, ship, pull request) may take, 15 or more; rows past it are left to the scheduled full suite. |
 | `token_budget` | 0 | Tokens a goal may spend over all steps before no new step starts; 0 means no budget. |
 | `version_file` | VERSION | The file that holds the version; a release bumps it and writes the changelog. |
