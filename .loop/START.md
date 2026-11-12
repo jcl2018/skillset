@@ -31,7 +31,7 @@ Every requirement and every fixed defect has a regression row in `.loop/regressi
 
 ## Health
 
-Health checks the repo with fixed rules that give the same answer every time, on the schedule `47 */4 * * *`; a branch or worktree older than 14 days is stale. The judge's environment: ANTHROPIC_API_KEY.
+Health checks the repo with fixed rules that give the same answer every time, on the schedule `47 */4 * * *`; a branch or worktree older than 14 days is stale. The judge runs on the Mac with your own claude login.
 
 ## Settings
 
@@ -63,9 +63,9 @@ Every repo setting, its value and its one-line explanation is in the Settings ta
 | `goal_lane_minutes` | 10 | Minutes a goal's regression lane may take before health warns and its LANE line says over. |
 | `goal_levels` | land | Row levels a goal lane plans from: land, or nightly for land and nightly rows. |
 | `govern_hook` | true | false turns off the govern-only hook (setup.py --govern-hook installs it): edits, commits and pushes refused in the operation session. |
-| `health_cron` | 47 */4 * * * | Five cron fields: when the health routine and its digest run in GitHub Actions; off turns it off. |
-| `judge_env` | ANTHROPIC_API_KEY | The Actions secret holding the agent key; the scheduled judge runs only when it is set. |
-| `judge_setup` | none | A command the scheduled health run uses to install judge_command's program, run only with the secret. |
+| `health_cron` | 47 */4 * * * | Five cron fields (every N hours, or fixed hours): when health with the judge and its digest run on the Mac; off turns it off. |
+| `judge_env` | ANTHROPIC_API_KEY | No longer read: the judge runs on the Mac with your own claude login. Kept so old configs stay valid. |
+| `judge_setup` | none | No longer read: kept so old configs stay valid. |
 | `limit_wait` | 1800 | Seconds to wait after a usage limit before resuming. |
 | `max_tries` | 3 | Failed tries a goal gets before it stops and files a finding. |
 | `mend` | false | true lets watch start a fresh agent for a failed goal. |
@@ -74,7 +74,8 @@ Every repo setting, its value and its one-line explanation is in the Settings ta
 | `pool_size` | 20 | Idle worker sessions the session pool keeps; when it runs low the operation session asks you to create the missing ones. |
 | `pr_bumps_version` | false | true moves the last number of the version file once on a goal's branch. |
 | `prep_budget_minutes` | 15 | Minutes a lane may spend before its first test row (preparing, planning, waiting for a slot), 15 or more; a lane past it stops and says which part ran long. |
-| `regression_cron` | 17 9 * * * | Five cron fields: when the regression routine runs in GitHub Actions; off turns it off. |
+| `regression_cron` | 17 9 * * * | Five cron fields: when the full regression runs: in GitHub Actions for a public repo, with each Mac tick for a private one; off turns it off. |
+| `regression_runs` | none | Where the full regression runs: actions (a public repo) or mac (a private repo, with each Mac tick); setup records it from the repo's live visibility, and unset means it is not known (nothing is written for GitHub). |
 | `reply_hook` | true | false turns off the reply-format hook (setup.py --reply-hook installs it) in the operation session. |
 | `resume_on_limit` | false | true lets watch resume a goal that hit a usage limit. |
 | `review_depth` | full | full runs the plan and review skills' whole pipeline and refuses a condensed one; condensed allows a shorter run. |
@@ -87,7 +88,7 @@ Every repo setting, its value and its one-line explanation is in the Settings ta
 | `step_budget_minutes` | 30 | Minutes one review or ship step may take, 15 or more; a step at its limit finishes with what it has done and records what it left. |
 | `step_limit` | 0 | Seconds one flow step may run when the flow file sets no limit; 0 means the built-in limit. |
 | `template_repo` | none | The template's GitHub repo (owner/name) update reads releases from, when the installed package names none. |
-| `template_version` | 0.27.17 |  |
+| `template_version` | 0.27.29 |  |
 | `test_budget_minutes` | 15 | Minutes one in-loop test run (qa, ship, pull request) may take, 15 or more; rows past it are left to the scheduled full suite. |
 | `token_budget` | 0 | Tokens a goal may spend over all steps before no new step starts; 0 means no budget. |
 | `version_file` | VERSION | The file that holds the version; a release bumps it and writes the changelog. |
