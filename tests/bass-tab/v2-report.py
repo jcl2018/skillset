@@ -7,4 +7,5 @@ BARS = {n: [{"A": (n % 3, "")}] * 8 for n in range(1, 9)}
 CHORDS = {n: "A" for n in range(1, 9)}
 SECTIONS = {1: {"name": "Verse", "notes": [], "same_as": None},
             5: {"name": "Chorus", "notes": [], "same_as": None}}
+BARS[7] = [None] * 8  # a missing bar stays in BARS, empty
 REPORT = {"missing": [7], "estimates": [3, 4], "sections": {1: "invented source one"}}
