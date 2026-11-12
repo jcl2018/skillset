@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.1.2 - 2026-11-12
+
+- Health: render docs, add health workflow, regression row, Bass-tab review
+- Regression row for BAS-6
+- Regenerate Tests page
+- Merge remote-tracking branch 'origin/main' into loop/health-clear
+- Drop health.yml (health runs on the Mac); re-render docs; flip health-clear-1 row
+- Record seen-red for health-clear-1
+- Reword BAS-6 (rule) and BAS-8 (report format); leave Bass-tab Unreviewed for the owner
+
+### How to verify
+
+No manual steps were recorded.
+
 ## v0.1.1 - 2026-11-12
 
 - Bass-tab v2: header, source report, 5-string staves, format template, with tests and rows
