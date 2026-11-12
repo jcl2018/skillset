@@ -8,8 +8,12 @@ Code keeps the fitting algorithm and the BAS-3 limits; the template cannot loose
 from __future__ import annotations
 
 import json
+import math
 import os
+import string
 from types import SimpleNamespace
+
+from tabcore import open_pitches
 
 DEFAULT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "templates",
                        "chart-format.json")
@@ -19,6 +23,8 @@ REQUIRED = ["missing_text", "title_row.left", "title_row.right", "title_row.size
             "report.parts", "report.none_text", "section.size", "section.repeat",
             "section.ref", "staff.label_size", "staff.gap", "staff.clef", "chords.size",
             "lyrics.size", "ladder"]
+SIZES = ["title_row.size", "title_row.right_size", "header_size", "report.size", "section.size",
+         "staff.label_size", "staff.gap", "chords.size", "lyrics.size"]
 
 
 def _bad(path, why):
@@ -29,6 +35,23 @@ def _ns(x):
     if isinstance(x, dict):
         return SimpleNamespace(**{k: _ns(v) for k, v in x.items()})
     return [_ns(v) for v in x] if isinstance(x, list) else x
+
+
+def _num(v, low=None):
+    """A finite number above 0 (or at least LOW when given); anything else is a bad value."""
+    if isinstance(v, bool):
+        raise ValueError(v)
+    v = float(v)
+    if not math.isfinite(v) or (v < low if low is not None else v <= 0):
+        raise ValueError(v)
+    return v
+
+
+def _fields(fmt, allowed):
+    """Only bare {name} placeholders from ALLOWED: no format spec, conversion or attribute."""
+    for _, name, spec, conv in string.Formatter().parse(fmt):
+        if name is not None and (name not in allowed or spec or conv):
+            raise ValueError(name)
 
 
 def load(path=None):
@@ -48,17 +71,28 @@ def load(path=None):
             cur = cur[part]
     try:
         for r in raw["ladder"]:
-            r["fs"], r["pad"], r["maxp"] = float(r["fs"]), float(r["pad"]), int(r["maxp"])
-            r["secref"], r["rhythm"] = bool(r["secref"]), bool(r["rhythm"])
-        raw["ladder"] = [r for r in raw["ladder"] if r["fs"] >= MIN_FS]
-        raw["section"]["repeat"].format(n=2)
-        raw["section"]["ref"].format(other="x", a=1, b=2)
-        for h in raw["header"]:
-            h["field"], h["label"]
-        for p in raw["report"]["parts"]:
-            p["key"], p["label"]
+            r["fs"], r["pad"] = _num(r["fs"]), _num(r["pad"], 0.0)
+            if isinstance(r["maxp"], bool) or not isinstance(r["maxp"], int) or r["maxp"] < 1 or \
+                    not all(isinstance(r[k], bool) for k in ("secref", "rhythm")):
+                raise ValueError("ladder")
+        # The code keeps the fitting order: bigger digits first, the template's order within a size.
+        raw["ladder"] = sorted((r for r in raw["ladder"] if r["fs"] >= MIN_FS), key=lambda r: -r["fs"])
+        for key in SIZES:
+            *up, last = key.split(".")
+            cur = raw
+            for part in up:
+                cur = cur[part]
+            cur[last] = _num(cur[last])
+        texts = [raw["title_row"]["left"], raw["title_row"]["right"], raw["missing_text"],
+                 raw["report"]["heading"], raw["report"]["none_text"]]
+        texts += [h[k] for h in raw["header"] for k in ("field", "label")]
+        texts += [p[k] for p in raw["report"]["parts"] for k in ("key", "label")]
+        if not all(isinstance(x, str) for x in texts):
+            raise ValueError("text")
+        _fields(raw["section"]["repeat"], {"n"})
+        _fields(raw["section"]["ref"], {"other", "a", "b"})
     except (KeyError, IndexError, ValueError, TypeError):
-        _bad(path, "has a bad value (a ladder rung, a placeholder or a field entry)")
+        _bad(path, "has a bad value (a ladder rung, a size, a placeholder or a field entry)")
     if not raw["ladder"]:
         _bad(path, "has no ladder rung at %.0f pt or more" % MIN_FS)
     if any(p["key"] not in ("missing", "estimates", "sections") for p in raw["report"]["parts"]):
@@ -66,10 +100,15 @@ def load(path=None):
     return _ns(raw)
 
 
+def sources(meta):
+    """META sources (or source) as a list of strings; a plain string is one source."""
+    v = meta.get("sources") or meta.get("source") or []
+    return [str(s) for s in v] if isinstance(v, (list, tuple)) else [str(v)]
+
+
 def _val(meta, field, t):
     if field == "sources":
-        v = meta.get("sources") or ([meta["source"]] if meta.get("source") else [])
-        v = "; ".join(str(s) for s in v)
+        v = "; ".join(sources(meta))
     else:
         v = meta.get(field)
     return str(v) if v not in (None, "", []) else t.missing_text
@@ -90,8 +129,14 @@ def check_song(song, name):
     if meta.get("source") and meta.get("sources"):
         raise SystemExit("%s sets both source and sources; keep one" % name)
     rows = song["rows"]
+    if not song["bars"]:
+        raise SystemExit("%s: BARS is empty" % name)
     if len(rows) == 4 and "B" in (meta.get("open") or {}):
         raise SystemExit("%s: META open names a B string, but the song is 4-string" % name)
+    try:
+        open_pitches(meta)
+    except ValueError as e:
+        raise SystemExit("%s: %s" % (name, e))
     for n, bar in song["bars"].items():
         for slot in bar:
             for st in (slot or {}):
@@ -101,9 +146,18 @@ def check_song(song, name):
     if not isinstance(rep, dict) or set(rep) - {"missing", "estimates", "sections"}:
         raise SystemExit("%s: REPORT keys are missing, estimates, sections" % name)
     for k in ("missing", "estimates"):
-        for b in rep.get(k) or []:
-            if isinstance(b, int) and b not in song["bars"]:
+        v = rep.get(k)
+        if v is not None and not (isinstance(v, (list, tuple)) and
+                                  all(isinstance(b, int) and not isinstance(b, bool) for b in v)):
+            raise SystemExit("%s: REPORT %s must be a list of bar numbers" % (name, k))
+        for b in v or []:
+            if b not in song["bars"]:
                 raise SystemExit("%s: REPORT %s names bar %d, which is not in BARS" % (name, k, b))
+    listed = list(rep.get("missing") or []) + list(rep.get("estimates") or [])
+    if len(listed) != len(set(listed)):
+        raise SystemExit("%s: REPORT names a bar more than once (in missing or estimates)" % name)
+    if rep.get("sections") is not None and not isinstance(rep["sections"], dict):
+        raise SystemExit("%s: REPORT sections must map a section start bar to its source" % name)
     for b in (rep.get("sections") or {}):
         if b not in song["sections"]:
             raise SystemExit("%s: REPORT sections key %r is not a section start bar" % (name, b))

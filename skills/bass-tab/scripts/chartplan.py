@@ -7,7 +7,6 @@ section labels, collapsed repeats, chord names and per-bar lyrics.
 
 from __future__ import annotations
 
-import chartformat
 from tabcore import section_ranges
 from pdfkit import string_width
 
@@ -24,9 +23,6 @@ class Cfg:
 def ladder(t):
     """The fitting ladder from a template; rungs under 9 pt were dropped by the loader."""
     return [Cfg(r.fs, r.pad, r.secref, r.maxp, r.rhythm, t) for r in t.ladder]
-
-
-LADDER = ladder(chartformat.load())
 
 
 def slot_widths(bar, cfg):

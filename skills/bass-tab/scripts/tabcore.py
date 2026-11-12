@@ -96,7 +96,7 @@ def row_label(meta, row):
     return (meta.get("open") or {}).get(row, row)
 
 
-def string_for(fret, chord, rows=None):
+def string_for(fret, chord):
     """Which string carries this fret, given the chord the bar sits on.
 
     A fret number ALONE never fixes a note: fret 7 is B on the E string and E on
@@ -110,20 +110,21 @@ def string_for(fret, chord, rows=None):
     that agree on no string is a contradiction in the reading, and raises here
     rather than being silently printed on whichever line was typed.
     """
-    rows = rows or _LOW_TO_HIGH
-    hits = [st for st in rows
+    hits = [st for st in _LOW_TO_HIGH
             if _NAMES[(_OPEN[st] + fret) % 12] == chord]
     if not hits:
         raise ValueError(
             "fret %d sounds %s on no string - chord %r is inconsistent with it "
             "(fret %d gives %s)" % (fret, chord, chord, fret,
             "/".join("%s=%s" % (st, _NAMES[(_OPEN[st] + fret) % 12])
-                     for st in rows)))
+                     for st in _LOW_TO_HIGH)))
     return hits[0]
 
 
-def bar_note(bar, opens=None, rows=None):
+def bar_note(bar, opens=None):
     """The lowest sounding note of the bar's first struck slot, or "".
+
+    4-string rows only (E A D G): tabgen, its one caller, refuses a 5-string song.
 
     Handles what a naive slot-0 lookup cannot: a bar whose first slots are held
     over from the previous bar (common in riff-heavy songs), and a slot sounding
@@ -134,7 +135,7 @@ def bar_note(bar, opens=None, rows=None):
     for slot in bar:
         if not slot:
             continue
-        for st in rows or _LOW_TO_HIGH:
+        for st in _LOW_TO_HIGH:
             if st in slot:
                 fret = slot[st][0]
                 if isinstance(fret, int):

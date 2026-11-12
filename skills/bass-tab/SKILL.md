@@ -31,7 +31,8 @@ Optional fields (a value the sources do not show is left out, and the chart prin
 `META["instrument"]` (such as "5-string bass"), `META["sources"]` (every source used, a list; a song
 sets this or `META["source"]`, never both), and `REPORT = {"missing": [bars], "estimates": [bars],
 "sections": {start_bar: "source"}}`. Fill `REPORT` as step 6 below says; the chart prints it after the
-last line.
+last line (the text tab from `tabgen.py` does not carry it). A missing bar stays in `BARS` as an empty
+bar (`[None] * slots`), never filled in, so `REPORT["missing"]` can name it.
 
 `LYRICS` maps a bar number to the words sung under that bar. They may come from the owner, or from what a
 source visibly shows (for example on-screen lyrics in a tab video). Never invent them or fill them from

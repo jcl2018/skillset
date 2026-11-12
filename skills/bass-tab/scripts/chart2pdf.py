@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Render a song file straight to a compact play-along chart PDF (1-2 pages).
 
-    python3 chart2pdf.py <slug>/<slug>.py -o <slug>/<slug>.pdf [--paper letter|a4]
+    python3 chart2pdf.py <slug>/<slug>.py -o <slug>/<slug>.pdf [--paper letter|a4] [--template PATH]
 
 Several bars per line, a bold section label where each section starts, repeated
 figures drawn once between repeat signs with a count, a section that repeats an
@@ -22,16 +22,31 @@ from pdfkit import (_WARNINGS, FOOTER_SIZE, MARGIN, PAPERS, fit_to_width, string
 import chartformat
 from tabcore import SLOTS, rhythm_cells, row_label, section_ranges, strings_for
 from tabgen import load_song
-from chartplan import LADDER, UNIT, bar_width, ladder, pack, plan_units, slot_widths
+from chartplan import UNIT, bar_width, ladder, pack, plan_units, slot_widths
 
 MAX_PAGES = 2
 CLEF = 11.0                      # room left of the stave for the T A B clef
 
 
-def gutter(cfg):
+def label_w(song, cfg):
+    """Width of the widest string label (at least one letter W; a retuned row may be C#)."""
+    sz = cfg.t.staff.label_size
+    return max([string_width("W", "F3", sz)] +
+               [string_width(row_label(song["meta"], r), "F3", sz) for r in song["rows"]])
+
+
+def gutter(cfg, song):
     """Room left of the stave: the clef (if the template draws it) and the string letters."""
-    st = cfg.t.staff
-    return (CLEF if st.clef else 0.0) + string_width("W", "F3", st.label_size) + 3.0
+    return (CLEF if cfg.t.staff.clef else 0.0) + label_w(song, cfg) + 3.0
+
+
+def head_step(cfg):
+    return cfg.t.header_size + 3.0
+
+
+def rule_drop(cfg, n):
+    """How far under the title baseline the header rule sits, for N header lines."""
+    return cfg.t.header_size + 5.0 + head_step(cfg) * (max(n, 1) - 1) + 6.0
 
 
 def gap(cfg):
@@ -75,7 +90,7 @@ def head_lines(song, cfg, usable):
 
 
 def tail_blocks(song, cfg, usable):
-    """[(text, font, size, step)]: the source report, then the caveats."""
+    """[(text, font, size, step, gray)]: the source report, then the caveats."""
     t, out = cfg.t, []
     ranges = section_ranges(song["sections"], song["bars"])
     for text, bold in chartformat.report_lines(song, ranges, t):
@@ -93,11 +108,11 @@ def foot_blocks(song, usable):
 
 def paginate(song, cfg, w, h):
     usable = w - 2 * MARGIN
-    avail = usable - gutter(cfg)
+    avail = usable - gutter(cfg, song)
     lines = pack(plan_units(song, cfg, avail - 20), avail, cfg.t.section.size)
     top = h - MARGIN
     bottom = MARGIN + 26
-    head = 26 + 11 * len(head_lines(song, cfg, usable)) + 8
+    head = cfg.t.title_row.size + rule_drop(cfg, len(head_lines(song, cfg, usable))) + 9
     notes = tail_blocks(song, cfg, usable)
     pages, cur, y = [], [], top - head
     for ln in lines:
@@ -108,8 +123,13 @@ def paginate(song, cfg, w, h):
         cur.append((ln, y, lh))
         y -= lh
     pages.append(cur)
-    if y - 8 - sum(n[3] for n in notes) < bottom and notes:
+    need = 8 + sum(n[3] for n in notes)
+    if notes and y - need < bottom:
         pages.append([])
+        if need > top - bottom:      # longer than a page: never cut it
+            raise SystemExit("chart2pdf: %s: the source report and caveats do not fit one page "
+                             "(%d lines). Shorten them." % (song["meta"].get("title") or "song",
+                                                            len(notes)))
     return pages, lines, notes
 
 
@@ -172,7 +192,7 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
         pdf.text(MARGIN, y - 11, lab, "F2", ssz)
         pdf.text(MARGIN + string_width(lab, "F2", ssz) + 6, y - 11, u["text"], "F4", 9.0, gray=0.3)
         return
-    avail = usable - gutter(cfg)
+    avail = usable - gutter(cfg, song)
     fixed = sum(18 for u in ln if u["reps"] > 1)
     sum_bars = sum(u["width"] for u in ln) - fixed
     f = 1.0 if last else max(1.0, min(1.4, (avail - fixed) / sum_bars))
@@ -188,7 +208,7 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
     ys = [cy - 5 - g * i for i in range(len(rows))]
     pdf.rule(x_left, ys[0], x_left, ys[-1])
     for yy, row in zip(ys, rows):
-        pdf.text(x_left - string_width("W", "F3", t.staff.label_size) - 1.5,
+        pdf.text(x_left - label_w(song, cfg) - 1.5,
                  yy - t.staff.label_size * 0.33, row_label(song["meta"], row), "F3", t.staff.label_size)
     x = x_left
     for u in ln:
@@ -231,10 +251,14 @@ def render(song, paper, refs_only=False, template=None):
     t = chartformat.load(template)
     name = song["meta"].get("title") or "song"
     chartformat.check_song(song, name)
-    rungs = ladder(t) if template else LADDER
+    rungs = ladder(t)
     title, artist = chartformat.title_parts(song["meta"], t)
     cfg = pages = lines = notes = None
-    for cand in [c for c in rungs if c.secref or not refs_only]:
+    cands = [c for c in rungs if c.secref or not refs_only]
+    if not cands:
+        raise SystemExit("chart2pdf: template %s has no secref rung for --collapse-sections"
+                         % (template or chartformat.DEFAULT))
+    for cand in cands:
         pages, lines, notes = paginate(song, cand, w, h)
         if len(pages) <= MAX_PAGES:
             cfg = cand
@@ -256,10 +280,10 @@ def render(song, paper, refs_only=False, template=None):
             pdf.text(w - MARGIN - string_width(a, "F3", tr.right_size), tx, a, "F3", tr.right_size, gray=0.25)
             hl = head_lines(song, cfg, usable)
             for k, hb in enumerate(hl):
-                pdf.text(MARGIN, tx - 13 - 11 * k, hb, "F3", t.header_size, gray=0.35)
-            pdf.rule(MARGIN, tx - 8 - 11 * len(hl), w - MARGIN)
+                pdf.text(MARGIN, tx - t.header_size - 5 - head_step(cfg) * k, hb, "F3", t.header_size, gray=0.35)
+            pdf.rule(MARGIN, tx - rule_drop(cfg, len(hl)), w - MARGIN)
         for ln, y, lh in pg:
-            draw_line(pdf, song, cfg, ln, y, lh, usable, ln is last_line, MARGIN + gutter(cfg))
+            draw_line(pdf, song, cfg, ln, y, lh, usable, ln is last_line, MARGIN + gutter(cfg, song))
         if pi == len(pages) - 1 and notes:
             yy = (pg[-1][1] - pg[-1][2]) if pg else h - MARGIN
             yy -= 6
