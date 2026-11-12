@@ -3,6 +3,8 @@
   "agent_command": [
     "claude",
     "-p",
+    "--model",
+    "claude-sonnet-5-5",
     "--allowedTools=Bash,Read,Write,Edit,Skill,Glob,Grep"
   ],
   "parallel": 0,
