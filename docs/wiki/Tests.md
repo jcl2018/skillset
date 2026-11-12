@@ -32,3 +32,7 @@
 | <a id="t-chart-polish-7"></a>chart-polish-7 | requirement | done line chart-polish:1 | not run | - | local | 2026-11-12 |
 | <a id="t-chart-polish-8"></a>chart-polish-8 | requirement | done line chart-polish:1 | not run | - | local | 2026-11-12 |
 | <a id="t-chart-polish-9"></a>chart-polish-9 | requirement | done line chart-polish:1 | not run | - | local | 2026-11-12 |
+| <a id="t-chart-polish-10"></a>chart-polish-10 | requirement | done line chart-polish:1 | not run | - | local | 2026-11-12 |
+| <a id="t-chart-polish-11"></a>chart-polish-11 | requirement | done line chart-polish:1 | not run | - | local | 2026-11-12 |
+| <a id="t-chart-polish-12"></a>chart-polish-12 | requirement | done line chart-polish:1 | not run | - | local | 2026-11-12 |
+| <a id="t-chart-polish-13"></a>chart-polish-13 | requirement | done line chart-polish:1 | not run | - | local | 2026-11-12 |

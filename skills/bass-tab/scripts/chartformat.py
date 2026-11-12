@@ -21,11 +21,11 @@ MIN_FS = 9.0                     # tab digits are never smaller (BAS-3)
 REQUIRED = ["missing_text", "title_row.left", "title_row.right", "title_row.size",
             "title_row.right_size", "header", "header_size", "report.heading", "report.size",
             "report.parts", "report.none_text", "section.size", "section.repeat",
-            "section.ref", "section.time", "section.time_size", "bar_numbers.size", "marks.missing",
-            "marks.size", "marks.estimate_size", "staff.label_size", "staff.gap", "staff.clef", "chords.size",
+            "section.ref", "section.time", "section.time_size", "section.count_gap", "bar_numbers.size", "marks.missing",
+            "marks.size", "marks.estimate_size", "marks.estimate_room", "staff.label_size", "staff.gap", "staff.clef", "chords.size",
             "lyrics.size", "ladder"]
-SIZES = ["title_row.size", "title_row.right_size", "header_size", "report.size", "section.size", "section.time_size",
-         "bar_numbers.size", "marks.size", "marks.estimate_size", "staff.label_size", "staff.gap", "chords.size", "lyrics.size"]
+SIZES = ["title_row.size", "title_row.right_size", "header_size", "report.size", "section.size", "section.time_size", "section.count_gap",
+         "bar_numbers.size", "marks.size", "marks.estimate_size", "marks.estimate_room", "staff.label_size", "staff.gap", "chords.size", "lyrics.size"]
 
 
 def _bad(path, why):
@@ -87,6 +87,8 @@ def load(path=None):
             for part in up:
                 cur = cur[part]
             cur[last] = _num(cur[last])
+        if raw["marks"]["estimate_room"] < raw["marks"]["estimate_size"]:
+            raise ValueError("estimate_room")       # the sign must fit the room kept for it
         texts = [raw["title_row"]["left"], raw["title_row"]["right"], raw["missing_text"],
                  raw["report"]["heading"], raw["report"]["none_text"]]
         texts += [h[k] for h in raw["header"] for k in ("field", "label")]
@@ -168,10 +170,19 @@ def check_song(song, name):
             raise SystemExit("%s: REPORT sections key %r is not a section start bar" % (name, b))
 
 
+def report_hidden(rep, parts):
+    """True when the report says nothing: absent, None, or no list set and no section source named.
+    An explicit empty missing or estimates list is "checked, none", so it keeps the report."""
+    if not rep:
+        return True
+    lists = [p.key for p in parts if p.key != "sections"]
+    return all(rep.get(k) is None for k in lists) and not any((rep.get("sections") or {}).values())
+
+
 def report_lines(song, ranges, t):
     """[(text, bold)] for the report block: heading, then each part in template order."""
-    rep, none, miss = song["report"], t.report.none_text, t.missing_text
-    if all(rep.get(p.key) is None for p in t.report.parts) and not any((rep.get("sections") or {}).values()):
+    rep, none, miss = song.get("report") or {}, t.report.none_text, t.missing_text
+    if report_hidden(rep, t.report.parts):
         return []                                  # every line would read "not shown": leave it out
     out = [(t.report.heading, True)]
     for p in t.report.parts:

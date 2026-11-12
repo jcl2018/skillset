@@ -56,9 +56,15 @@ def natural(num, song, cfg):
     if lyr:
         need = max(need, string_width(lyr, "F3", cfg.t.lyrics.size) + 4)
     ch = song["chords"].get(num) or ""
-    if ch:
-        need = max(need, string_width(ch, "F2", cfg.t.chords.size) + 4)
+    room = sign_room(song, num, cfg)
+    if ch or room:
+        need = max(need, (string_width(ch, "F2", cfg.t.chords.size) + 4 if ch else 0.0) + room)
     return max(w, need)
+
+
+def sign_room(song, num, cfg):
+    """Width kept clear at the right of an estimated bar for its sign, so it never meets a chord name."""
+    return cfg.t.marks.estimate_room if num in estimates(song) else 0.0
 
 
 def missing(song):
@@ -66,20 +72,67 @@ def missing(song):
     return set((song.get("report") or {}).get("missing") or [])
 
 
-def sections_identical(song, a, b, a2, b2):
-    miss = missing(song)
-    if b - a != b2 - a2 or any(x in miss for x in list(range(a, b + 1)) + list(range(a2, b2 + 1))):
+def estimates(song):
+    """REPORT["estimates"] bars: guessed, so each keeps its own sign and is never folded away."""
+    return set((song.get("report") or {}).get("estimates") or [])
+
+
+def unfoldable(song):
+    """The never-fold set: missing and estimated bars. Built once per planning pass."""
+    return missing(song) | estimates(song)
+
+
+class Fold:
+    """What decides whether bars may fold: the never-fold set and each bar's effective chord
+    (the last label in force, carried forward; "" before the first label)."""
+
+    def __init__(self, song):
+        self.unf, self.eff, cur = unfoldable(song), {}, ""
+        for n in sorted(song["bars"]):
+            cur = song["chords"].get(n) or cur
+            self.eff[n] = cur
+
+
+def base_ok(fold, bars):
+    return not any(b in fold.unf for b in bars)
+
+
+def rep_ok(fold, bars):
+    return not any(b in fold.unf for b in bars)
+
+
+def sec_target_ok(fold, a, b):
+    return not any(x in fold.unf for x in range(a, b + 1))
+
+
+def sec_new_ok(fold, a, b):
+    return not any(x in fold.unf for x in range(a, b + 1))
+
+
+def fig_chords_agree(fold, base, rep):
+    return all(fold.eff.get(x, "") == fold.eff.get(y, "") for x, y in zip(base, rep))
+
+
+def sec_chords_agree(fold, a, a2, n):
+    return all(fold.eff.get(a + k, "") == fold.eff.get(a2 + k, "") for k in range(n))
+
+
+def sections_identical(song, a, b, a2, b2, fold=None):
+    fold = fold or Fold(song)
+    if b - a != b2 - a2 or not sec_target_ok(fold, a, b) or not sec_new_ok(fold, a2, b2) \
+            or not sec_chords_agree(fold, a, a2, b - a + 1):
         return False
     return all(song["bars"][a + k] == song["bars"][a2 + k]
                and (song["lyrics"].get(a + k) or "") == (song["lyrics"].get(a2 + k) or "")
                for k in range(b - a + 1))
 
 
-def collapse(nums, song, cfg, starts, limit):
-    """[lo, period, reps] runs. A repeat never swallows a section start, and a
-    figure wider than a line is not collapsed. Lyrics must match as well as notes."""
+def collapse(nums, song, cfg, starts, limit, fold=None):
+    """[lo, period, reps] runs. A repeat never swallows a section start, never holds a missing or
+    estimated bar, and a figure wider than a line is not collapsed. Notes, lyrics and the chord
+    in force must match as well."""
     bars, lyr, out, i, n = song["bars"], song["lyrics"], [], 0, len(nums)
-    miss = missing(song)
+    fold = fold or Fold(song)
     while i < n:
         best = (1, 1)
         for p in range(1, cfg.maxp + 1):
@@ -89,13 +142,14 @@ def collapse(nums, song, cfg, starts, limit):
                 break
             if sum(bar_width(nums[i + k], song, cfg) for k in range(p)) > limit:
                 break
-            reps = 1
-            while i + (reps + 1) * p <= n:
+            reps, fig = 1, nums[i:i + p]
+            while base_ok(fold, fig) and i + (reps + 1) * p <= n:
                 j = i + reps * p
-                if any(nums[j + k] in starts or nums[i + k] in miss or nums[j + k] in miss
-                       or bars[nums[j + k]] != bars[nums[i + k]]
-                       or (lyr.get(nums[j + k]) or "") != (lyr.get(nums[i + k]) or "")
-                       for k in range(p)):
+                cp = nums[j:j + p]
+                if any(x in starts for x in cp) or not rep_ok(fold, cp) \
+                        or not fig_chords_agree(fold, fig, cp) \
+                        or any(bars[x] != bars[y] or (lyr.get(x) or "") != (lyr.get(y) or "")
+                               for x, y in zip(cp, fig)):
                     break
                 reps += 1
             if reps > 1 and reps * p > best[0] * best[1]:
@@ -118,18 +172,18 @@ def plan_units(song, cfg, limit):
     """Ordered units: a one-line reference to an earlier identical section, or a run of bars."""
     ranges = section_ranges(song["sections"], song["bars"])
     starts = set(song["sections"])
-    units, seen = [], []
+    units, seen, fold = [], [], Fold(song)
     for s in sorted(song["sections"]):
         a, b = ranges[s]
         name = song["sections"][s]["name"]
-        ref = next((t for t in seen if sections_identical(song, *ranges[t], a, b)), None) \
+        ref = next((t for t in seen if sections_identical(song, *ranges[t], a, b, fold)), None) \
             if cfg.secref and b > a else None
         if ref is not None:
             units.append({"kind": "ref", "label": name, "time": start_time(song, a), "sec": s,
                           "text": cfg.t.section.ref.format(other=song["sections"][ref]["name"],
                                                            a=ranges[ref][0], b=ranges[ref][1])})
         else:
-            for k, (lo, p, reps) in enumerate(collapse(list(range(a, b + 1)), song, cfg, starts, limit)):
+            for k, (lo, p, reps) in enumerate(collapse(list(range(a, b + 1)), song, cfg, starts, limit, fold)):
                 units.append({"kind": "bars", "bars": list(range(lo, lo + p)), "reps": reps,
                               "label": name if lo == a else None, "sec": s,
                               "time": start_time(song, a) if lo == a else "",

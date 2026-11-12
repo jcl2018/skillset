@@ -137,6 +137,16 @@ def paginate(song, cfg, w, h):
     return pages, lines, notes
 
 
+def count_x(cx, w, boxes, gap):
+    """Left edge of a repeat count of width W centred on CX; if it would touch a section label or
+    time (BOXES of x0, x1), it moves just right of that label, GAP clear."""
+    x = cx - w / 2.0
+    for x0, x1 in sorted(boxes):
+        if x < x1 + gap and x + w > x0 - gap:
+            x = x1 + gap
+    return x
+
+
 def draw_bar(pdf, song, cfg, num, x0, bw, ys, g):
     bar, slots = song["bars"][num], song["slots"]
     nat = slot_widths(bar, cfg)
@@ -223,7 +233,9 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
         pdf.text(x_left - label_w(song, cfg) - 1.5,
                  yy - t.staff.label_size * 0.33, row_label(song["meta"], row), "F3", t.staff.label_size)
     x = x_left
-    miss, est = chartplan.missing(song), set(song["report"].get("estimates") or [])
+    boxes, counts = [], []
+    miss = chartplan.missing(song)
+    est = chartplan.unfoldable(song) - miss
     for u in ln:
         reps = u["reps"] > 1
         x_start = x
@@ -238,9 +250,12 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
                 pdf.stem(x, ys[-1] - 0.5, ys[0] + 0.5, w=0.7)
             if bi == 0 and u["label"]:
                 pdf.text(x + 1, lab_y, u["label"], "F2", ssz)
+                end = x + 1 + string_width(u["label"], "F2", ssz)
                 if u["time"]:
-                    pdf.text(x + 1 + string_width(u["label"], "F2", ssz) + 4, lab_y,
-                             t.section.time.format(t=u["time"]), "F3", t.section.time_size, gray=0.4)
+                    tm = t.section.time.format(t=u["time"])
+                    pdf.text(end + 4, lab_y, tm, "F3", t.section.time_size, gray=0.4)
+                    end += 4 + string_width(tm, "F3", t.section.time_size)
+                boxes.append((x + 1, end))
             pdf.text(x + 1.5, num_y, str(num), "F3", t.bar_numbers.size, gray=0.4)
             ch = song["chords"].get(num)
             if ch:
@@ -252,7 +267,7 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
                 pdf._ops.append(b"1 g %.2f %.2f %.2f %.2f re f\n" % (x + bw / 2 - mw / 2 - 2, my - ms * 0.6, mw + 4, ms * 1.3))
                 pdf.text(x + bw / 2 - mw / 2, my - ms * 0.33, mk, "F4", ms, gray=0.35)
             if num in est:
-                pdf.approx(x + bw - t.marks.estimate_size, ys[0] + 5, t.marks.estimate_size * 0.8)
+                pdf.approx(x + bw - t.marks.estimate_room / 2.0, ys[0] + 5, t.marks.estimate_size * 0.8)
             lyr = song["lyrics"].get(num)
             if lyr:
                 pdf.text(x + 2, ys[-1] - (1.4 * g + 3 if cfg.rhythm else 0) - 9, lyr, "F3", t.lyrics.size)
@@ -263,7 +278,10 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
             x += 9
             pdf.repeat_bar(x, ys[-1] - 0.5, ys[0] + 0.5, opening=False)
             lbl = t.section.repeat.format(n=u["reps"])
-            pdf.text(x - 1.5 - string_width(lbl, "F2", 9.0) / 2, count_y, lbl, "F2", 9.0)
+            counts.append((x - 1.5, lbl))
+    for cx, lbl in counts:
+        w = string_width(lbl, "F2", 9.0)
+        pdf.text(count_x(cx, w, boxes, t.section.count_gap), count_y, lbl, "F2", 9.0)
     clef, step = 7.5, (ys[0] - ys[-1]) / 3.0
     for k, ch in enumerate("TAB" if t.staff.clef else ""):
         pdf.text(MARGIN + 1.5, ys[0] - (k + 0.5) * step - clef * 0.33, ch, "F2", clef)
