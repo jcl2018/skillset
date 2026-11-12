@@ -3,7 +3,7 @@
 
 Milestone: https://github.com/jcl2018/skillset/milestone/1
 
-Review: **Reviewed 2026-11-12** <!-- prd P=6aa551e5 R=b0c8c702 N=a7f35ab3 M=708ea665 U=d3a02caf -->
+Review: **Unreviewed**
 
 ## Problem
 - I learn bass lines from many places: tab videos on YouTube and Bilibili, tab sites like Songsterr, other sites I find, screenshots and PDFs.
@@ -27,15 +27,15 @@ Review: **Reviewed 2026-11-12** <!-- prd P=6aa551e5 R=b0c8c702 N=a7f35ab3 M=708e
   - A repeated figure is drawn once with its count (x4).
   - A section that repeats an earlier one is one line ("Chorus 2 = Chorus").
   - Chord names sit over their bars, and each lyric under its own bar.
-- BAS-6: **Reviewed 2026-11-11** Only what the sources show <!-- reviewed 5c058e5a -->
+- BAS-6: **Unreviewed** Only what the sources show
   - Sources are whatever I provide: any URL (such as a video, Songsterr or another tab site, or a lyrics or chord page), screenshots, PDFs, notes.
-  - Bars, chords and lyrics come only from those sources, never from memory or a web search I didn't ask for.
-  - A source it can't open or read is named in the source report, never guessed around.
+  - Each bar, chord and lyric comes only from a source I provided and can be traced to it, never from memory or a web search I didn't ask for.
+  - A source it can't open or read is never guessed around.
 - BAS-7: **Reviewed 2026-11-11** Song header <!-- reviewed 2a38f7b4 -->
   - Every chart starts with the same header: title, artist, BPM, key, time signature, tuning, instrument (such as 5-string bass), and every source used.
   - A value the sources don't show reads "not shown", never a guess.
-- BAS-8: **Reviewed 2026-11-11** Source report <!-- reviewed 2e3e37c2 -->
-  - Every transcription ends with a short report listing missing bars, bars that are estimates, and which source gave each section.
+- BAS-8: **Unreviewed** Source report
+  - Every transcription ends with a short report in a fixed format listing missing bars, bars that are estimates, which source gave each section, and any source it couldn't open or read.
 - BAS-9: **Reviewed 2026-11-11** Four- and five-string bass <!-- reviewed 399a7de6 -->
   - The tab draws as many string lines as the song's bass has (4 or 5, such as a low B), labeled to match its tuning.
 - BAS-10: **Reviewed 2026-11-11** One format template <!-- reviewed cb0f29c2 -->
@@ -69,7 +69,7 @@ Review: **Reviewed 2026-11-12** <!-- prd P=6aa551e5 R=b0c8c702 N=a7f35ab3 M=708e
 |---|---|---|---|---|
 | [bas-tab-baseline](Tests#t-bas-tab-baseline) | requirement | BAS-1 | Given the fixture song, when its compact text tab is generated, then it matches the recorded baseline byte for byte. | PASS 2026-11-12 |
 | [bas-chart-layout](Tests#t-bas-chart-layout) | requirement | BAS-2 | Given an invented song with sections, repeats and lyrics, when its chart is rendered, then each section has a bold label, the repeated bars print once with a count, and each lyric sits under its own bar. | PASS 2026-11-12 |
-| [bas-sources-only](Tests#t-bas-sources-only) | requirement | BAS-6 | Given sources for a song, when the agent writes the song file, then every bar and lyric comes from a source, which only a person reading the source report can check. | not run |
+| [bas-sources-only](Tests#t-bas-sources-only) | requirement | BAS-6 | Given sources for a song, when the agent writes the song file, then each bar, chord and lyric comes only from a cited source, which a person reading the source report checks; the nightly run checks the report's format (BAS-8). | not run |
 | - | requirement | BAS-6 | no passing test | not enforced |
 | [bas-header](Tests#t-bas-header) | requirement | BAS-7 | Given a song whose source shows only a title, when its chart is rendered, then the title row and every header field print in template order, each missing one reading "not shown". | PASS 2026-11-12 |
 | [bas-source-report](Tests#t-bas-source-report) | requirement | BAS-8 | Given a song with a source report, when its chart is rendered, then missing bars, estimates and the source per section print after the last stave line, a missing part reads "not shown", and a bad report key is refused. | PASS 2026-11-12 |
