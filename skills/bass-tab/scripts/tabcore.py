@@ -51,13 +51,21 @@ def rhythm_cells(bar, slots=SLOTS):
 
 # Standard tuning, as semitone offsets from C. The note under a bar is DERIVED
 # from the fretboard, so it cannot disagree with the notes printed beneath it.
-_OPEN = {"E": 4, "A": 9, "D": 2, "G": 7}
+_OPEN = {"E": 4, "A": 9, "D": 2, "G": 7, "B": 11}
 
 
 _NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
 
 _LOW_TO_HIGH = ["E", "A", "D", "G"]
+
+
+def strings_for(meta):
+    """The song's rows, low to high: E A D G, or B E A D G when META["strings"] is 5."""
+    n = meta.get("strings", 4)
+    if n not in (4, 5):
+        raise ValueError("META strings must be 4 or 5, not %r" % (n,))
+    return (["B"] if n == 5 else []) + _LOW_TO_HIGH
 
 
 def open_pitches(meta):
@@ -73,11 +81,12 @@ def open_pitches(meta):
     fingered and every interval is unchanged, which is how such a song is
     written. Only a tuning that changes the intervals BETWEEN strings does.
     """
-    pcs = dict(_OPEN)
+    rows = strings_for(meta)
+    pcs = {r: _OPEN[r] for r in rows}
     for row, note in (meta.get("open") or {}).items():
         if row not in pcs or note not in _NAMES:
             raise ValueError("META open %r: %r is not a row (%s) or %r is not a note (%s)"
-                             % ({row: note}, row, "/".join(_LOW_TO_HIGH), note, " ".join(_NAMES)))
+                             % ({row: note}, row, "/".join(rows), note, " ".join(_NAMES)))
         pcs[row] = _NAMES.index(note)
     return pcs
 
@@ -114,6 +123,8 @@ def string_for(fret, chord):
 
 def bar_note(bar, opens=None):
     """The lowest sounding note of the bar's first struck slot, or "".
+
+    4-string rows only (E A D G): tabgen, its one caller, refuses a 5-string song.
 
     Handles what a naive slot-0 lookup cannot: a bar whose first slots are held
     over from the previous bar (common in riff-heavy songs), and a slot sounding

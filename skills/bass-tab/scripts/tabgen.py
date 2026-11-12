@@ -18,10 +18,11 @@ from __future__ import annotations
 import importlib.util
 import sys
 
+from chartformat import sources
 from tabcheck import verification_lines
 from tabcore import (
     SLOT_W, SLOTS, STRINGS, bar_note, collapse_runs, open_pitches, render_slot,
-    rhythm_cells, row_label, section_ranges, timestamp,
+    rhythm_cells, row_label, section_ranges, strings_for, timestamp,
 )
 
 
@@ -81,8 +82,9 @@ def build(song, bars_per_system=3, cut="full"):
 
     L = []
     for k in ("title", "artist", "key", "tempo", "time", "tuning", "source", "legend"):
-        if M.get(k):
-            L.append("%s: %s" % (k, "%s BPM" % M[k] if k == "tempo" else M[k]))
+        v = "; ".join(sources(M)) if k == "source" else M.get(k)
+        if v:
+            L.append("%s: %s" % (k, "%s BPM" % v if k == "tempo" else v))
     L.append("")
     if not compact and getattr(song, "HEADER", None):
         L.append("[How to read this]")
@@ -182,6 +184,19 @@ def main(argv=None):
     n = int(a[a.index("--bars") + 1]) if "--bars" in a else 3
     cut = a[a.index("--cut") + 1] if "--cut" in a else "full"
     song = load_song(a[0])
+    meta, name = song.META, song.META.get("title", a[0])
+    try:
+        rows = strings_for(meta)
+    except ValueError as e:
+        print("tabgen: %s: %s" % (name, e), file=sys.stderr)
+        return 2
+    if len(rows) != 4:
+        print("tabgen: %s is %d-string; render it with chart2pdf.py" % (name, len(rows)),
+              file=sys.stderr)
+        return 2
+    if meta.get("source") and meta.get("sources"):
+        print("tabgen: %s sets both source and sources; keep one" % name, file=sys.stderr)
+        return 2
     text = build(song, n, cut)
     open(a[1], "w", encoding="utf-8").write(text)
     want = int(song.META.get("slots", SLOTS))

@@ -26,6 +26,14 @@ One song, one directory, three files:
 ONCE and stamped wherever it is played**, so a correction reaches every copy. Never expand a repeat into
 independent copies.
 
+Optional fields (a value the sources do not show is left out, and the chart prints "not shown"):
+`META["strings"]` (4, the default, or 5 for a low B; the chart draws that many labeled lines),
+`META["instrument"]` (such as "5-string bass"), `META["sources"]` (every source used, a list; a song
+sets this or `META["source"]`, never both), and `REPORT = {"missing": [bars], "estimates": [bars],
+"sections": {start_bar: "source"}}`. Fill `REPORT` as step 6 below says; the chart prints it after the
+last line (the text tab from `tabgen.py` does not carry it). A missing bar stays in `BARS` as an empty
+bar (`[None] * slots`), never filled in, so `REPORT["missing"]` can name it.
+
 `LYRICS` maps a bar number to the words sung under that bar. They may come from the owner, or from what a
 source visibly shows (for example on-screen lyrics in a tab video). Never invent them or fill them from
 memory or from a web search; if no source shows words, leave `LYRICS = {}` and say the owner can add them. A
@@ -34,7 +42,7 @@ song with no lyrics renders cleanly. Lyrics print verbatim and survive every reg
 ## Render
 
 ```
-python3 scripts/chart2pdf.py <slug>/<slug>.py -o <slug>/<slug>.pdf [--paper letter|a4]
+python3 scripts/chart2pdf.py <slug>/<slug>.py -o <slug>/<slug>.pdf [--paper letter|a4] [--template PATH]
 python3 scripts/tabgen.py <slug>/<slug>.py <slug>/<slug>.tab --bars <1 if META slots == 16 else 3> --cut compact
 ```
 
@@ -44,6 +52,11 @@ section that repeats an earlier one reduced to one line (`Chorus 2 = Chorus (bar
 over bars where `CHORDS` has them, and lyrics under the bar they belong to. It is US-Letter by default and
 at most 2 pages: tab digits stay at 9 pt or more, spacing tightens and repeats collapse before the font
 shrinks, and a song that still does not fit is refused with a line naming it. Report the page count.
+The chart opens with a header (title, artist, BPM, key, time signature, tuning, instrument, sources) and
+ends with the source report. **`templates/chart-format.json` is the one layout file**: header fields and
+order, the report, section and repeat text, the staff, chord and lyric sizes, the fitting ladder. Change
+it and every song changes; `--template PATH` renders through another copy. A 5-string song renders only
+as a chart in this version: `tabgen.py` refuses it with a line saying so.
 Needs Pillow for non-Latin lyrics or titles (see above). `--collapse-sections` forces the reference lines.
 
 The long, one-bar-wide PDF is still available: `tabgen.py ... --cut compact` then
@@ -76,8 +89,9 @@ Follow this literally; it is the point of the skill.
    entry: the chord fixes which string a fret is on (fret 7 is B on the E string, E on the A string), so
    `tabgen.py` derives the string and raises on a fret/chord pair that agree on no string. Put the tempo in
    `META`; section timestamps are computed from it.
-6. **Report what you did not do.** Which bars are missing, which are estimates, which source gave what. End
-   every transcription with that, not with a clean bill of health.
+6. **Report what you did not do.** Which bars are missing, which are estimates, which source gave what:
+   put it in `REPORT` and `META["sources"]`, so the chart ends with it, and end your reply with the same
+   report, not with a clean bill of health.
 
 Rhythm read by eye and frets never measured are the known weak points; say so in `CAVEATS`.
 

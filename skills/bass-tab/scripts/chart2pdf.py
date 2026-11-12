@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Render a song file straight to a compact play-along chart PDF (1-2 pages).
 
-    python3 chart2pdf.py <slug>/<slug>.py -o <slug>/<slug>.pdf [--paper letter|a4]
+    python3 chart2pdf.py <slug>/<slug>.py -o <slug>/<slug>.pdf [--paper letter|a4] [--template PATH]
 
 Several bars per line, a bold section label where each section starts, repeated
 figures drawn once between repeat signs with a count, a section that repeats an
@@ -19,29 +19,60 @@ import sys
 from pdfdraw import PDF
 from pdfkit import (_WARNINGS, FOOTER_SIZE, MARGIN, PAPERS, fit_to_width, string_width,
                     wrap_to_width)
-from tabcore import SLOTS, STRINGS, rhythm_cells
+import chartformat
+from tabcore import SLOTS, rhythm_cells, row_label, section_ranges, strings_for
 from tabgen import load_song
-from chartplan import LADDER, UNIT, bar_width, pack, plan_units, slot_widths
+from chartplan import UNIT, bar_width, ladder, pack, plan_units, slot_widths
 
 MAX_PAGES = 2
 CLEF = 11.0                      # room left of the stave for the T A B clef
+
+
+def label_w(song, cfg):
+    """Width of the widest string label (at least one letter W; a retuned row may be C#)."""
+    sz = cfg.t.staff.label_size
+    return max([string_width("W", "F3", sz)] +
+               [string_width(row_label(song["meta"], r), "F3", sz) for r in song["rows"]])
+
+
+def gutter(cfg, song):
+    """Room left of the stave: the clef (if the template draws it) and the string letters."""
+    return (CLEF if cfg.t.staff.clef else 0.0) + label_w(song, cfg) + 3.0
+
+
+def head_step(cfg):
+    return cfg.t.header_size + 3.0
+
+
+def rule_drop(cfg, n):
+    """How far under the title baseline the header rule sits, for N header lines."""
+    return cfg.t.header_size + 5.0 + head_step(cfg) * (max(n, 1) - 1) + 6.0
+
+
+def gap(cfg):
+    return cfg.fs * cfg.t.staff.gap
 SHORT = {"8": 1, "3": 1, "6": 2}
 
 
 def read_song(path):
     m = load_song(path)
     meta = m.META
-    return {"meta": meta, "bars": m.BARS, "sections": m.SECTIONS,
+    try:
+        rows = strings_for(meta)
+    except ValueError as e:
+        raise SystemExit("%s: %s" % (meta.get("title", path), e))
+    return {"meta": meta, "rows": rows, "report": getattr(m, "REPORT", None) or {},
+             "bars": m.BARS, "sections": m.SECTIONS,
             "chords": getattr(m, "CHORDS", None) or {}, "lyrics": getattr(m, "LYRICS", {}) or {},
             "caveats": getattr(m, "CAVEATS", []), "slots": int(meta.get("slots", SLOTS))}
 
 
 def line_height(line, song, cfg):
-    g = cfg.fs * 1.05
+    g = gap(cfg)
     if line[0]["kind"] == "ref":
         return 16.0
     bars = [b for u in line for b in u["bars"]]
-    h = 3 + 3 * g + 5
+    h = 3 + (len(song["rows"]) - 1) * g + 5
     if any(u["label"] for u in line):
         h += 12
     if any(song["chords"].get(b) for b in bars):
@@ -53,11 +84,19 @@ def line_height(line, song, cfg):
     return h + 4
 
 
-def header_lines(song):
-    meta = song["meta"]
-    bits = ["%s: %s" % (k, "%s BPM" % meta[k] if k == "tempo" else meta[k])
-            for k in ("key", "tempo", "time", "tuning") if meta.get(k)]
-    return bits
+def head_lines(song, cfg, usable):
+    t = cfg.t
+    return wrap_to_width(chartformat.header_text(song["meta"], t), "F3", t.header_size, usable)
+
+
+def tail_blocks(song, cfg, usable):
+    """[(text, font, size, step, gray)]: the source report, then the caveats."""
+    t, out = cfg.t, []
+    ranges = section_ranges(song["sections"], song["bars"])
+    for text, bold in chartformat.report_lines(song, ranges, t):
+        for ln in wrap_to_width(text, "F2" if bold else "F3", t.report.size, usable):
+            out.append((ln, "F2" if bold else "F3", t.report.size, t.report.size + 2.0, 0.25))
+    return out + [(n, "F3", 7.0, 9.0, 0.4) for n in foot_blocks(song, usable)]
 
 
 def foot_blocks(song, usable):
@@ -69,12 +108,12 @@ def foot_blocks(song, usable):
 
 def paginate(song, cfg, w, h):
     usable = w - 2 * MARGIN
-    avail = usable - CLEF
-    lines = pack(plan_units(song, cfg, avail - 20), avail)
+    avail = usable - gutter(cfg, song)
+    lines = pack(plan_units(song, cfg, avail - 20), avail, cfg.t.section.size)
     top = h - MARGIN
     bottom = MARGIN + 26
-    head = 26 + (12 if header_lines(song) else 0) + 8
-    notes = foot_blocks(song, usable)
+    head = cfg.t.title_row.size + rule_drop(cfg, len(head_lines(song, cfg, usable))) + 9
+    notes = tail_blocks(song, cfg, usable)
     pages, cur, y = [], [], top - head
     for ln in lines:
         lh = line_height(ln, song, cfg)
@@ -84,8 +123,13 @@ def paginate(song, cfg, w, h):
         cur.append((ln, y, lh))
         y -= lh
     pages.append(cur)
-    if y - 10 * len(notes) < bottom and notes:
+    need = 8 + sum(n[3] for n in notes)
+    if notes and y - need < bottom:
         pages.append([])
+        if need > top - bottom:      # longer than a page: never cut it
+            raise SystemExit("chart2pdf: %s: the source report and caveats do not fit one page "
+                             "(%d lines). Shorten them." % (song["meta"].get("title") or "song",
+                                                            len(notes)))
     return pages, lines, notes
 
 
@@ -97,10 +141,10 @@ def draw_bar(pdf, song, cfg, num, x0, bw, ys, g):
     for wd in nat:
         xs.append(x + wd * k / 2.0)
         x += wd * k
-    fs = cfg.fs
+    fs, hi = cfg.fs, song["rows"][::-1]
     for i, sl in enumerate(bar):
         for st, (fret, art) in (sl or {}).items():
-            y = ys[STRINGS.index(st)]
+            y = ys[hi.index(st)]
             txt = str(fret)
             tw = len(txt) * UNIT * fs
             pdf._ops.append(b"1 g %.2f %.2f %.2f %.2f re f\n"
@@ -114,7 +158,7 @@ def draw_bar(pdf, song, cfg, num, x0, bw, ys, g):
         return
     cells = rhythm_cells(bar, slots)
     codes = [cells[3 * i] for i in range(slots)]
-    base, end = ys[3] - g * 0.5, ys[3] - g * 1.4
+    base, end = ys[-1] - g * 0.5, ys[-1] - g * 1.4
     per = slots // 4
     groups = {}
     for i, c in enumerate(codes):
@@ -140,14 +184,15 @@ def draw_bar(pdf, song, cfg, num, x0, bw, ys, g):
 
 
 def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
-    g = cfg.fs * 1.05
+    g, t = gap(cfg), cfg.t
+    ssz = t.section.size
     if ln[0]["kind"] == "ref":
         u = ln[0]
-        lab, _ = fit_to_width(u["label"], "F2", 10.0, usable * 0.6)
-        pdf.text(MARGIN, y - 11, lab, "F2", 10.0)
-        pdf.text(MARGIN + string_width(lab, "F2", 10.0) + 6, y - 11, u["text"], "F4", 9.0, gray=0.3)
+        lab, _ = fit_to_width(u["label"], "F2", ssz, usable * 0.6)
+        pdf.text(MARGIN, y - 11, lab, "F2", ssz)
+        pdf.text(MARGIN + string_width(lab, "F2", ssz) + 6, y - 11, u["text"], "F4", 9.0, gray=0.3)
         return
-    avail = usable - CLEF
+    avail = usable - gutter(cfg, song)
     fixed = sum(18 for u in ln if u["reps"] > 1)
     sum_bars = sum(u["width"] for u in ln) - fixed
     f = 1.0 if last else max(1.0, min(1.4, (avail - fixed) / sum_bars))
@@ -159,49 +204,61 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
     if has_chord:
         cy -= 10
     chord_y = cy + 1
-    ys = [cy - 5 - g * i for i in range(4)]
-    pdf.rule(x_left, ys[0], x_left, ys[3])
+    rows = song["rows"][::-1]
+    ys = [cy - 5 - g * i for i in range(len(rows))]
+    pdf.rule(x_left, ys[0], x_left, ys[-1])
+    for yy, row in zip(ys, rows):
+        pdf.text(x_left - label_w(song, cfg) - 1.5,
+                 yy - t.staff.label_size * 0.33, row_label(song["meta"], row), "F3", t.staff.label_size)
     x = x_left
     for u in ln:
         reps = u["reps"] > 1
         x_start = x
         if reps:
-            pdf.repeat_bar(x, ys[3] - 0.5, ys[0] + 0.5, opening=True)
+            pdf.repeat_bar(x, ys[-1] - 0.5, ys[0] + 0.5, opening=True)
             x += 9
         for bi, num in enumerate(u["bars"]):
             bw = bar_width(num, song, cfg) * f
             for yy in ys:
                 pdf.rule(x, yy, x + bw, gray=0.45)
             if bi == 0 and not reps:
-                pdf.stem(x, ys[3] - 0.5, ys[0] + 0.5, w=0.7)
+                pdf.stem(x, ys[-1] - 0.5, ys[0] + 0.5, w=0.7)
             if bi == 0 and u["label"]:
-                pdf.text(x + 1, lab_y, u["label"], "F2", 10.0)
+                pdf.text(x + 1, lab_y, u["label"], "F2", ssz)
             ch = song["chords"].get(num)
             if ch:
-                pdf.text(x + 2, chord_y, ch, "F2", 9.0, gray=0.15)
+                pdf.text(x + 2, chord_y, ch, "F2", t.chords.size, gray=0.15)
             draw_bar(pdf, song, cfg, num, x, bw, ys, g)
             lyr = song["lyrics"].get(num)
             if lyr:
-                pdf.text(x + 2, ys[3] - (1.4 * g + 3 if cfg.rhythm else 0) - 9, lyr, "F3", 8.5)
+                pdf.text(x + 2, ys[-1] - (1.4 * g + 3 if cfg.rhythm else 0) - 9, lyr, "F3", t.lyrics.size)
             x += bw
             if not (reps and bi == len(u["bars"]) - 1):
-                pdf.stem(x, ys[3] - 0.5, ys[0] + 0.5, w=0.7)
+                pdf.stem(x, ys[-1] - 0.5, ys[0] + 0.5, w=0.7)
         if reps:
             x += 9
-            pdf.repeat_bar(x, ys[3] - 0.5, ys[0] + 0.5, opening=False)
-            lbl = "x%d" % u["reps"]
+            pdf.repeat_bar(x, ys[-1] - 0.5, ys[0] + 0.5, opening=False)
+            lbl = t.section.repeat.format(n=u["reps"])
             pdf.text(x - string_width(lbl, "F2", 9.0), ys[0] + 3.5, lbl, "F2", 9.0)
-    clef = 7.5
-    for k, ch in enumerate("TAB"):
-        pdf.text(MARGIN + 1.5, ys[0] - 3 - k * (g * 0.95) - clef * 0.3 + g * 0.35, ch, "F2", clef)
+    clef, step = 7.5, (ys[0] - ys[-1]) / 3.0
+    for k, ch in enumerate("TAB" if t.staff.clef else ""):
+        pdf.text(MARGIN + 1.5, ys[0] - (k + 0.5) * step - clef * 0.33, ch, "F2", clef)
 
 
-def render(song, paper, refs_only=False):
+def render(song, paper, refs_only=False, template=None):
     w, h = PAPERS[paper]
     usable = w - 2 * MARGIN
-    title = song["meta"].get("title", "Bass tab")
+    t = chartformat.load(template)
+    name = song["meta"].get("title") or "song"
+    chartformat.check_song(song, name)
+    rungs = ladder(t)
+    title, artist = chartformat.title_parts(song["meta"], t)
     cfg = pages = lines = notes = None
-    for cand in [c for c in LADDER if c.secref or not refs_only]:
+    cands = [c for c in rungs if c.secref or not refs_only]
+    if not cands:
+        raise SystemExit("chart2pdf: template %s has no secref rung for --collapse-sections"
+                         % (template or chartformat.DEFAULT))
+    for cand in cands:
         pages, lines, notes = paginate(song, cand, w, h)
         if len(pages) <= MAX_PAGES:
             cfg = cand
@@ -209,34 +266,34 @@ def render(song, paper, refs_only=False):
     if cfg is None:
         raise SystemExit("chart2pdf: %s does not fit %d pages at %.0f pt tab digits "
                          "(needs %d). Cut bars or split the song."
-                         % (title, MAX_PAGES, LADDER[-1].fs, len(pages)))
+                         % (name, MAX_PAGES, rungs[-1].fs, len(pages)))
     pdf = PDF(w, h)
-    artist = song["meta"].get("artist", "")
     last_line = lines[-1]
     for pi, pg in enumerate(pages):
         pdf.new_page()
         if pi == 0:
-            t, ts = fit_to_width(title, "F2", 17.0, usable * 0.62, min_size=11.0)
+            tr = t.title_row
+            tt, ts = fit_to_width(title, "F2", tr.size, usable * 0.62, min_size=11.0)
             tx = h - MARGIN - ts
-            pdf.text(MARGIN, tx, t, "F2", ts)
-            if artist:
-                a, _ = fit_to_width(artist, "F3", 10.0, usable - string_width(t, "F2", ts) - 14)
-                pdf.text(w - MARGIN - string_width(a, "F3", 10.0), tx, a, "F3", 10.0, gray=0.25)
-            hb = "   ·   ".join(header_lines(song))
-            if hb:
-                hb, _ = fit_to_width(hb, "F3", 8.0, usable)
-                pdf.text(MARGIN, tx - 13, hb, "F3", 8.0, gray=0.35)
-            pdf.rule(MARGIN, tx - 19, w - MARGIN)
+            pdf.text(MARGIN, tx, tt, "F2", ts)
+            a, _ = fit_to_width(artist, "F3", tr.right_size, usable - string_width(tt, "F2", ts) - 14)
+            pdf.text(w - MARGIN - string_width(a, "F3", tr.right_size), tx, a, "F3", tr.right_size, gray=0.25)
+            hl = head_lines(song, cfg, usable)
+            for k, hb in enumerate(hl):
+                pdf.text(MARGIN, tx - t.header_size - 5 - head_step(cfg) * k, hb, "F3", t.header_size, gray=0.35)
+            pdf.rule(MARGIN, tx - rule_drop(cfg, len(hl)), w - MARGIN)
         for ln, y, lh in pg:
-            draw_line(pdf, song, cfg, ln, y, lh, usable, ln is last_line, MARGIN + CLEF)
+            draw_line(pdf, song, cfg, ln, y, lh, usable, ln is last_line, MARGIN + gutter(cfg, song))
         if pi == len(pages) - 1 and notes:
             yy = (pg[-1][1] - pg[-1][2]) if pg else h - MARGIN
-            for n in notes:
-                yy -= 9
-                pdf.text(MARGIN, yy, n, "F3", 7.0, gray=0.4)
+            yy -= 6
+            for txt, font, size, step, gr in notes:
+                yy -= step
+                pdf.text(MARGIN, yy, txt, font, size, gray=gr)
     pdf.flush()
     total = len(pdf.pages)
-    label = "%s — %s" % (title, artist) if artist else title
+    art = song["meta"].get("artist", "")
+    label = "%s — %s" % (title, art) if art else title
     for idx, (ops, imgs) in enumerate(zip(pdf.pages, pdf.page_images), start=1):
         pdf._ops, pdf._imgs = ops, imgs
         pn = "%d / %d" % (idx, total)
@@ -247,7 +304,7 @@ def render(song, paper, refs_only=False):
     pdf._ops, pdf._imgs = [], set()
     stats = {"pages": total, "tab_font_pt": cfg.fs, "lines": len(lines),
              "section_refs": sum(1 for ln in lines if ln[0]["kind"] == "ref")}
-    return pdf.build(title, artist), stats
+    return pdf.build(title, art), stats
 
 
 def main(argv=None):
@@ -257,10 +314,11 @@ def main(argv=None):
     ap.add_argument("--paper", choices=sorted(PAPERS), default="letter")
     ap.add_argument("--collapse-sections", action="store_true",
                     help="start at the rung that reduces a repeated section to a reference line")
+    ap.add_argument("--template", default=None, help="the chart format file (default: the skill's)")
     ap.add_argument("--allow-lossy", action="store_true",
                     help="write the PDF even if non-Latin text had to become '?'")
     args = ap.parse_args(argv)
-    data, stats = render(read_song(args.song), args.paper, args.collapse_sections)
+    data, stats = render(read_song(args.song), args.paper, args.collapse_sections, args.template)
     for wmsg in _WARNINGS:
         print("warning: %s" % wmsg, file=sys.stderr)
     if not args.allow_lossy and any(m.startswith("lossy:") for m in _WARNINGS):

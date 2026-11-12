@@ -38,7 +38,7 @@ for name in ("Intro", "Verse", "Chorus", "Bridge", "Chorus 2"):
 if "x2" not in bold:
     fail("no collapsed repeat count")
 printed_bars = sum(len(u["bars"]) for u in chart2pdf.pack(
-    chart2pdf.plan_units(song, chart2pdf.LADDER[0], 480), 480)[0] if u["kind"] == "bars")
+    chart2pdf.plan_units(song, chart2pdf.ladder(chart2pdf.chartformat.load())[0], 480), 480)[0] if u["kind"] == "bars")
 if printed_bars >= len(song["bars"]):
     fail("repeats were not collapsed")
 
