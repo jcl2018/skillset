@@ -27,7 +27,7 @@ Feature pages live in `docs/wiki`, one PRD page per feature with numbered requir
 
 ## Regression
 
-Every requirement and every fixed defect has a regression row in `.loop/regression.tsv`, seen failing before its fix. The land lane runs once per goal, in qa, within 15 minutes (the budget; rows past it are left to the scheduled run); the scheduled run is `17 9 * * *`.
+Every requirement and every fixed defect has a regression row in `.loop/regression.tsv`, seen failing before its fix. The land lane runs once per goal, in qa, within 15 minutes (the budget; rows past it are left to the scheduled run), after at most 15 minutes of preparing, planning and waiting for a slot before its first row; the scheduled run is `17 9 * * *`.
 
 ## Health
 
@@ -41,13 +41,13 @@ Every repo setting, its value and its one-line explanation is in the Settings ta
 
 | Feature | Milestone | What it is for | How to use it |
 |---|---|---|---|
-| Bass-tab | https://github.com/jcl2018/skillset/milestone/1 | I learn bass lines from many places: tab videos on YouTube and Bilibili, tab sites like Songsterr, other sites I find, screenshots and PDFs. | `python3 skills/bass-tab/scripts/chart2pdf.py SONG -o OUT [--paper letter\|a4] [--collapse-sections] [--allow-lossy]` — Renders a song file to the play-along chart PDF (US-Letter by default) and prints `wrote OUT  (N bytes)  pages=N  tab_font_pt=N  lines=N  section_refs=N` (exit 0). / `python3 skills/bass-tab/scripts/tabgen.py SONG OUT [--bars N] [--cut compact\|full]` — Writes the text tab (3 bars per line and the full cut by default; `--cut compact` is the sheet) and prints `bars=N range=A-B malformed=none  widths=[77]` (exit 0). / `python3 skills/bass-tab/scripts/tab2pdf.py TAB [-o OUT] [--paper a4\|letter] [--section-break-frac F] [--allow-lossy] [--check]` — Renders a text tab to the long one-bar-wide PDF (A4 by default, next to the tab when `-o` is left out) and prints `wrote OUT  (N bytes)  pages=N  tab_font_pt=N  longest_line=N  blocks=N  mono_lines=N  sections=N  rasterized_runs=N` (exit 0); with `--check` it writes nothing and prints `OK (check, nothing written)  pages=N ...` (exit 0). |
+| Bass-tab | https://github.com/jcl2018/skillset/milestone/1 | I learn bass lines from many places: tab videos on YouTube and Bilibili, tab sites like Songsterr, other sites I find, screenshots and PDFs. | `python3 skills/bass-tab/scripts/chart2pdf.py SONG -o OUT [--paper letter\|a4] [--collapse-sections] [--template PATH] [--allow-lossy]` — Renders a song file to the play-along chart PDF (US-Letter by default; layout from `skills/bass-tab/templates/chart-format.json` or `--template`) and prints `wrote OUT  (N bytes)  pages=N  tab_font_pt=N  lines=N  section_refs=N` (exit 0). / `python3 skills/bass-tab/scripts/tabgen.py SONG OUT [--bars N] [--cut compact\|full]` — Writes the text tab (3 bars per line and the full cut by default; `--cut compact` is the sheet) and prints `bars=N range=A-B malformed=none  widths=[77]` (exit 0). / `python3 skills/bass-tab/scripts/tab2pdf.py TAB [-o OUT] [--paper a4\|letter] [--section-break-frac F] [--allow-lossy] [--check]` — Renders a text tab to the long one-bar-wide PDF (A4 by default, next to the tab when `-o` is left out) and prints `wrote OUT  (N bytes)  pages=N  tab_font_pt=N  longest_line=N  blocks=N  mono_lines=N  sections=N  rasterized_runs=N` (exit 0); with `--check` it writes nothing and prints `OK (check, nothing written)  pages=N ...` (exit 0). |
 
 ## Settings table
 
 | Setting | Value | What it does |
 |---|---|---|
-| `agent_command` | ["claude", "-p", "--allowedTools=Bash,Read,Write,Edit,Skill,Glob,Grep"] | The command that runs a goal in the background; the prompt is its last argument. |
+| `agent_command` | ["claude", "-p", "--model", "claude-sonnet-5-5", "--allowedTools=Bash,Read,Write,Edit,Skill,Glob,Grep"] | The command that runs a goal in the background; the prompt is its last argument. |
 | `agent_files` | ["CLAUDE.md", "AGENTS.md"] | Agent entry files setup wires the workflow-loop block into; [] turns wiring off. |
 | `auto_approve` | true | true approves what a flow step leaves for the owner, logged as auto-approved. |
 | `auto_merge` | true | true lets the release step merge a goal's pull request and publish its release. |
@@ -72,6 +72,7 @@ Every repo setting, its value and its one-line explanation is in the Settings ta
 | `parallel` | 0 | Workers running at once; 0 means unlimited. |
 | `pool_size` | 20 | Idle worker sessions the session pool keeps; when it runs low the operation session asks you to create the missing ones. |
 | `pr_bumps_version` | false | true moves the last number of the version file once on a goal's branch. |
+| `prep_budget_minutes` | 15 | Minutes a lane may spend before its first test row (preparing, planning, waiting for a slot), 15 or more; a lane past it stops and says which part ran long. |
 | `regression_cron` | 17 9 * * * | Five cron fields: when the regression routine runs in GitHub Actions; off turns it off. |
 | `reply_hook` | true | false turns off the reply-format hook (setup.py --reply-hook installs it) in the operation session. |
 | `resume_on_limit` | false | true lets watch resume a goal that hit a usage limit. |
