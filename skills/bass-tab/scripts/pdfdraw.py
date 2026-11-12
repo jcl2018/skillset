@@ -220,6 +220,16 @@ class PDF:
         self._ops.append(b"0 G 0.9 w %.2f %.2f m %.2f %.2f l S\n"
                          % (x0, y0, x1, y1))
 
+    def approx(self, cx: float, cy: float, w: float = 7.0, gray: float = 0.2) -> None:
+        """The estimate sign: two small waves, one over the other."""
+        h = w * 0.16
+        for dy in (1.4, -1.4):
+            y, x0 = cy + dy, cx - w / 2.0
+            self._ops.append(b"%.3f G 0.8 w %.2f %.2f m %.2f %.2f %.2f %.2f %.2f %.2f c "
+                             b"%.2f %.2f %.2f %.2f %.2f %.2f c S\n"
+                             % (gray, x0, y, x0 + w * .2, y + h * 1.5, x0 + w * .4, y + h * 1.5, x0 + w * .5, y,
+                                x0 + w * .6, y - h * 1.5, x0 + w * .8, y - h * 1.5, x0 + w, y))
+
     def rule(self, x0: float, y: float, x1: float, gray: float = 0.75) -> None:
         self._ops.append(b"%.3f G %.2f w %.2f %.2f m %.2f %.2f l S\n"
                          % (gray, 0.5, x0, y, x1, y))

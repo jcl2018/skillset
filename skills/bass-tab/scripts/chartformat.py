@@ -21,10 +21,11 @@ MIN_FS = 9.0                     # tab digits are never smaller (BAS-3)
 REQUIRED = ["missing_text", "title_row.left", "title_row.right", "title_row.size",
             "title_row.right_size", "header", "header_size", "report.heading", "report.size",
             "report.parts", "report.none_text", "section.size", "section.repeat",
-            "section.ref", "staff.label_size", "staff.gap", "staff.clef", "chords.size",
+            "section.ref", "section.time", "section.time_size", "section.count_gap", "bar_numbers.size", "marks.missing",
+            "marks.size", "marks.estimate_size", "marks.estimate_room", "staff.label_size", "staff.gap", "staff.clef", "chords.size",
             "lyrics.size", "ladder"]
-SIZES = ["title_row.size", "title_row.right_size", "header_size", "report.size", "section.size",
-         "staff.label_size", "staff.gap", "chords.size", "lyrics.size"]
+SIZES = ["title_row.size", "title_row.right_size", "header_size", "report.size", "section.size", "section.time_size", "section.count_gap",
+         "bar_numbers.size", "marks.size", "marks.estimate_size", "marks.estimate_room", "staff.label_size", "staff.gap", "chords.size", "lyrics.size"]
 
 
 def _bad(path, why):
@@ -72,6 +73,9 @@ def load(path=None):
     try:
         for r in raw["ladder"]:
             r["fs"], r["pad"] = _num(r["fs"]), _num(r["pad"], 0.0)
+            r["pages"] = r.get("pages", 2)
+            if isinstance(r["pages"], bool) or r["pages"] not in (1, 2):
+                raise ValueError("ladder")
             if isinstance(r["maxp"], bool) or not isinstance(r["maxp"], int) or r["maxp"] < 1 or \
                     not all(isinstance(r[k], bool) for k in ("secref", "rhythm")):
                 raise ValueError("ladder")
@@ -83,14 +87,18 @@ def load(path=None):
             for part in up:
                 cur = cur[part]
             cur[last] = _num(cur[last])
+        if raw["marks"]["estimate_room"] < raw["marks"]["estimate_size"]:
+            raise ValueError("estimate_room")       # the sign must fit the room kept for it
         texts = [raw["title_row"]["left"], raw["title_row"]["right"], raw["missing_text"],
                  raw["report"]["heading"], raw["report"]["none_text"]]
         texts += [h[k] for h in raw["header"] for k in ("field", "label")]
+        texts.append(raw["marks"]["missing"])
         texts += [p[k] for p in raw["report"]["parts"] for k in ("key", "label")]
         if not all(isinstance(x, str) for x in texts):
             raise ValueError("text")
         _fields(raw["section"]["repeat"], {"n"})
         _fields(raw["section"]["ref"], {"other", "a", "b"})
+        _fields(raw["section"]["time"], {"t"})
     except (KeyError, IndexError, ValueError, TypeError):
         _bad(path, "has a bad value (a ladder rung, a size, a placeholder or a field entry)")
     if not raw["ladder"]:
@@ -106,21 +114,20 @@ def sources(meta):
     return [str(s) for s in v] if isinstance(v, (list, tuple)) else [str(v)]
 
 
-def _val(meta, field, t):
-    if field == "sources":
-        v = "; ".join(sources(meta))
-    else:
-        v = meta.get(field)
-    return str(v) if v not in (None, "", []) else t.missing_text
+def _val(meta, field):
+    """The field's text, or "" when the song has no value for it."""
+    v = "; ".join(sources(meta)) if field == "sources" else meta.get(field)
+    return str(v) if v not in (None, "", []) else ""
 
 
 def title_parts(meta, t):
-    return [(str(meta.get(k)) if meta.get(k) else t.missing_text)
-            for k in (t.title_row.left, t.title_row.right)]
+    left, right = (str(meta.get(k)) if meta.get(k) else "" for k in (t.title_row.left, t.title_row.right))
+    return [left or t.missing_text, right]      # no artist: the right side is left out
 
 
 def header_text(meta, t):
-    return "   ·   ".join("%s: %s" % (h.label, _val(meta, h.field, t)) for h in t.header)
+    return "   ·   ".join("%s: %s" % (h.label, _val(meta, h.field))
+                         for h in t.header if _val(meta, h.field))     # a field with no value is left out
 
 
 def check_song(song, name):
@@ -163,9 +170,20 @@ def check_song(song, name):
             raise SystemExit("%s: REPORT sections key %r is not a section start bar" % (name, b))
 
 
+def report_hidden(rep, parts):
+    """True when the report says nothing: absent, None, or no list set and no section source named.
+    An explicit empty missing or estimates list is "checked, none", so it keeps the report."""
+    if not rep:
+        return True
+    lists = [p.key for p in parts if p.key != "sections"]
+    return all(rep.get(k) is None for k in lists) and not any((rep.get("sections") or {}).values())
+
+
 def report_lines(song, ranges, t):
     """[(text, bold)] for the report block: heading, then each part in template order."""
-    rep, none, miss = song["report"], t.report.none_text, t.missing_text
+    rep, none, miss = song.get("report") or {}, t.report.none_text, t.missing_text
+    if report_hidden(rep, t.report.parts):
+        return []                                  # every line would read "not shown": leave it out
     out = [(t.report.heading, True)]
     for p in t.report.parts:
         v = rep.get(p.key)

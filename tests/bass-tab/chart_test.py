@@ -42,7 +42,10 @@ printed_bars = sum(len(u["bars"]) for u in chart2pdf.pack(
 if printed_bars >= len(song["bars"]):
     fail("repeats were not collapsed")
 
-# lyrics sit under their own bar: same x as the chord over that bar, and below it
+# lyrics sit under their own bar (the expanded chart keeps the repeated chorus, so all 8 lyrics print)
+texts.clear()
+chart2pdf.render(song, "letter", expand=True)
+# same x as the chord over that bar, and below it
 lyr = [t for t in texts if t[2] in ("la la la", "tum tum", "first line here")]
 if len(lyr) < 8:
     fail("lyrics missing: %d" % len(lyr))
