@@ -31,17 +31,17 @@ Review: **Unreviewed**
   - Sources are whatever I provide: any URL (such as a video, Songsterr or another tab site, or a lyrics or chord page), screenshots, PDFs, notes.
   - Each bar, chord and lyric comes only from a source I provided and can be traced to it, never from memory or a web search I didn't ask for.
   - A source it can't open or read is never guessed around.
-- BAS-7: **Reviewed 2026-11-11** Song header <!-- reviewed 2a38f7b4 -->
+- BAS-7: **Unreviewed** Song header
   - Every chart starts with the same header: title, artist, BPM, key, time signature, tuning, instrument (such as 5-string bass), and every source used.
-  - A value the sources don't show reads "not shown", never a guess.
+  - A header field the sources don't show is left out, never guessed; a missing title still reads "not shown".
 - BAS-8: **Unreviewed** Source report
   - Every transcription ends with a short report in a fixed format listing missing bars, bars that are estimates, which source gave each section, and any source it couldn't open or read.
 - BAS-9: **Reviewed 2026-11-11** Four- and five-string bass <!-- reviewed 399a7de6 -->
   - The tab draws as many string lines as the song's bass has (4 or 5, such as a low B), labeled to match its tuning.
-- BAS-10: **Reviewed 2026-11-11** One format template <!-- reviewed cb0f29c2 -->
+- BAS-10: **Unreviewed** One format template
   - One template file defines the printed layout: header fields and order; how a section starts and how repeats and repeated sections show; the Songsterr-style staff; where chords and lyrics sit; spacing and fonts.
   - Every song renders through it, so changing it changes every song the same way.
-  - A missing field prints "not shown", never a blank or a guess.
+  - A header field with no value is left out, never a blank or a guess; a missing title still reads "not shown".
 
 ### Non-functional
 - BAS-3: **Reviewed 2026-11-11** Fits a printout <!-- reviewed 7e8cd415 -->
