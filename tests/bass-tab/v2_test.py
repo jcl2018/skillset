@@ -96,15 +96,12 @@ def header():
     labels = ["BPM", "Key", "Time signature", "Tuning", "Instrument", "Sources"]
     stave_at = next(i for i, s in enumerate(t) if s == "Verse")
     head = [s for s in t[:stave_at]]
-    if "Sparse Fixture" not in head or "not shown" not in head:
-        fail("title row: title then bare 'not shown' for the artist: %r" % head)
-    blob = " ".join(head)
-    pos = [blob.find(l + ":") for l in labels]
-    if min(pos) < 0 or pos != sorted(pos):
-        fail("header labels missing or out of order: %r" % blob)
-    if blob.count("not shown") != 1 + len(labels):
-        fail("each missing field must read 'not shown': %r" % blob)
+    if "Sparse Fixture" not in head or "not shown" in head or any(l + ":" in " ".join(head) for l in labels):
+        fail("title row: only the title; no artist or empty header field is printed: %r" % head)
     full = " ".join(texts(render("v2-report.py")))
+    pos = [full.find(l + ":") for l in labels]
+    if min(pos) < 0 or pos != sorted(pos):
+        fail("header labels missing or out of order: %r" % full)
     for want in ("BPM: 90", "Key: A minor", "Instrument: 4-string bass",
                  "invented source one; invented source two"):
         if want not in full:
@@ -138,8 +135,8 @@ def report():
         if any(u["kind"] == "ref" or u["reps"] > 1 for u in us) != folds:
             fail("missing bars folded into a repeat or reference" if not folds else "control did not fold")
     plain = " ".join(texts(render("v2-sparse.py")))
-    if plain.count("not shown") < 3 + 7:
-        fail("a song with no REPORT must print 'not shown' for each part")
+    if "not shown" in plain or "Source report" in plain:
+        fail("a song with no REPORT must leave the report out, not print 'not shown'")
     bad = os.path.join(tempfile.mkdtemp(), "bad.py")
     src = open(os.path.join(here, "v2-report.py")).read().replace('{1: "invented', '{3: "invented')
     open(bad, "w").write(src)
@@ -229,7 +226,7 @@ def five():
     cs = render("v2-five.py")
     ys = [c[2] for c in first_stave(cs)]
     dig = [c for c in cs if c[0] == "t" and c[4] == "F1"][:2]
-    if [d[3] for d in dig] != ["1", "2"] or abs(dig[0][2] + 3.3 - ys[4]) > 0.1 or abs(dig[1][2] + 3.3 - ys[3]) > 0.1:
+    if [d[3] for d in dig] != ["1", "2"] or abs(dig[0][2] + dig[0][5] * 0.33 - ys[4]) > 0.1 or abs(dig[1][2] + dig[1][5] * 0.33 - ys[3]) > 0.1:
         fail("5-string frets not on the B and E lines: %r vs %r" % (dig, ys))
     # Value: protects=a 5-string song may retune its B row and the label follows; fails_when=check_song refuses open B regardless of string count; why_new=only the 4-string refusal was tested; seam=none; no_claim=pitch math
     low_a = mutant("v2-five.py", '"strings": 5,', '"strings": 5, "open": {"B": "A"},')
@@ -260,15 +257,18 @@ def template():
     t2["section"]["size"] = 12.0
     t2["staff"]["gap"] = 1.2
     write(t2)
-    for name in ("chart-song.py", "v2-sparse.py"):
+    for name in ("chart-song.py", "v2-report.py"):
         a = render(name)
         b = render(name, template=p)
         if a == b:
             fail("%s: the changed template changed nothing" % name)
-    tt = texts(render("v2-sparse.py", template=p))
-    blob = " ".join(tt)
-    if "unknown" not in blob or "not shown" in blob or blob.find("Sources:") > blob.find("BPM:"):
-        fail("missing text or header order did not follow the template: %r" % blob)
+    untitled = mutant("v2-report.py", '"title": "Report Fixture", ', "")
+    blob = " ".join(texts(render("v2-report.py", template=p)))
+    if blob.find("Sources:") > blob.find("BPM:") or "Sources:" not in blob:
+        fail("header order did not follow the template: %r" % blob)
+    blob = " ".join(texts(render_path(untitled, template=p)))
+    if "unknown" not in blob or "not shown" in blob:
+        fail("missing title text did not follow the template: %r" % blob)
     cs = render("chart-song.py", template=p)
     if "2 times" not in texts(cs) or not any(c[0] == "t" and c[3] == "Intro" and c[5] == 12.0 for c in cs):
         fail("repeat format or section size did not follow the template")
@@ -340,9 +340,12 @@ def template():
     write(t5)
     refused("chart2pdf.py", song_path, "t.json", "--template", p, "--collapse-sections")
     g = json.loads(json.dumps(t))
+    g["ladder"] = [r for r in t["ladder"] if r["fs"] == 10.0]     # one font size: the gap alone changes
+    write(g)
+    d0 = first_stave(render("chart-song.py", template=p))
     g["staff"]["gap"] = 2.1
     write(g)
-    d0, d1 = first_stave(render("chart-song.py")), first_stave(render("chart-song.py", template=p))
+    d1 = first_stave(render("chart-song.py", template=p))
     if abs((d1[0][2] - d1[1][2]) / (d0[0][2] - d0[1][2]) - 2.0) > 0.01:
         fail("staff.gap did not set the line gap")
     g["staff"]["gap"], g["staff"]["clef"] = 1.05, False
@@ -358,8 +361,8 @@ def template():
     t6 = json.loads(json.dumps(t))
     t6["title_row"]["size"], t6["header_size"] = 40.0, 30.0
     write(t6)
-    cs = render("v2-sparse.py", template=p)
-    title = next(c for c in cs if c[0] == "t" and c[3] == "Sparse Fixture")
+    cs = render("v2-report.py", template=p)
+    title = next(c for c in cs if c[0] == "t" and c[3] == "Report Fixture")
     head = [c for c in cs if c[0] == "t" and c[5] == 30.0]
     rule = next(c for c in cs if c[0] == "r" and c[1] == round(chart2pdf.MARGIN, 2) and c[3] == 0.75)
     stave_top = max(c[2] for c in cs if c[0] == "r" and c[3] == 0.45)

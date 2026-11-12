@@ -43,6 +43,9 @@ if python3 "$scripts/chart2pdf.py" "$here/chart-huge.py" -o "$out/h.pdf" >/dev/n
 # 3d. v2: header, source report, 4/5-string staves, the format template (invented songs).
 for c in header report five template; do python3 "$here/v2_test.py" "$c" >/dev/null || fail "v2 $c check failed"; done
 
+# 3e. Chart polish: the nine layout fixes, one check each (invented songs).
+for c in 1 2 3 4 5 6 7 8 9; do python3 "$here/polish_test.py" "$c" >/dev/null || fail "chart polish $c check failed"; done
+
 # 4. Every script stays under 20 KB.
 for f in "$scripts"/*.py; do
   [ "$(wc -c < "$f")" -lt 20480 ] || fail "$f is 20 KB or more"
