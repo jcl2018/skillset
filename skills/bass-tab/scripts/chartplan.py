@@ -170,8 +170,9 @@ def collapse(nums, song, cfg, starts, limit, fold=None):
 def start_time(song, bar):
     """The section's start in the recording, from the tempo; "" when the song has no tempo."""
     try:
-        return timestamp(bar, float(song["meta"].get("tempo") or 0))
-    except (TypeError, ValueError):
+        tempo = float(song["meta"].get("tempo") or 0)
+        return timestamp(bar, tempo) if 1 <= tempo < float("inf") else ""
+    except (TypeError, ValueError, OverflowError):
         return ""
 
 

@@ -166,6 +166,16 @@ def c4():
     if any(re.match(r"^\d+:\d\d$", s) for s in strs()):
         fail("a song with no tempo got a section time")
     wide_time_format()
+    # a tempo that is not a real beats-per-minute (at least 1) gives no time, never a traceback or a negative time
+    for tempo in (0, None, "fast", -90, 1e-300, float("inf"), float("nan")):
+        try:
+            tm = chartplan.start_time({"meta": {"tempo": tempo}}, 5)
+        except Exception as e:      # noqa: BLE001 - any crash is the failure being proved
+            fail("tempo %r crashed the section time: %s" % (tempo, type(e).__name__))
+        if tm != "":
+            fail("tempo %r printed the time %r, wanted none" % (tempo, tm))
+    if chartplan.start_time({"meta": {"tempo": 100}}, 5) != "0:09":
+        fail("a valid tempo lost its time")
     print("4 ok")
 
 
