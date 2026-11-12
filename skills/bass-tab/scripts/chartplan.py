@@ -42,11 +42,18 @@ def slot_widths(bar, cfg):
 def bar_width(num, song, cfg):
     """Natural width: the slots, widened if the chord or lyric over/under it is wider.
     A missing bar gets the width of the widest bar the song does have, never less."""
+    c = plan_ctx(song, cfg)
     w = natural(num, song, cfg)
-    miss = missing(song)
-    if num in miss:
-        w = max([w] + [natural(n, song, cfg) for n in song["bars"] if n not in miss])
-    return w
+    return max(w, c["wide"]) if num in c["miss"] else w
+
+
+def plan_ctx(song, cfg):
+    """The missing and estimated bar sets and the widest non-missing bar, built once per song and rung."""
+    c = getattr(cfg, "_ctx", None)
+    if c is None or c["song"] is not song:
+        c = cfg._ctx = {"song": song, "miss": missing(song), "est": estimates(song), "wide": 0.0}
+        c["wide"] = max([natural(n, song, cfg) for n in song["bars"] if n not in c["miss"]] or [0.0])
+    return c
 
 
 def natural(num, song, cfg):
@@ -64,7 +71,7 @@ def natural(num, song, cfg):
 
 def sign_room(song, num, cfg):
     """Width kept clear at the right of an estimated bar for its sign, so it never meets a chord name."""
-    return cfg.t.marks.estimate_room if num in estimates(song) else 0.0
+    return cfg.t.marks.estimate_room if num in plan_ctx(song, cfg)["est"] else 0.0
 
 
 def missing(song):
@@ -168,6 +175,12 @@ def start_time(song, bar):
         return ""
 
 
+def shown_time(song, bar, cfg):
+    """The start time as the chart prints it (the template's wording around it), or "" with no tempo."""
+    tm = start_time(song, bar)
+    return cfg.t.section.time.format(t=tm) if tm else ""
+
+
 def plan_units(song, cfg, limit):
     """Ordered units: a one-line reference to an earlier identical section, or a run of bars."""
     ranges = section_ranges(song["sections"], song["bars"])
@@ -179,14 +192,14 @@ def plan_units(song, cfg, limit):
         ref = next((t for t in seen if sections_identical(song, *ranges[t], a, b, fold)), None) \
             if cfg.secref and b > a else None
         if ref is not None:
-            units.append({"kind": "ref", "label": name, "time": start_time(song, a), "sec": s,
+            units.append({"kind": "ref", "label": name, "time": shown_time(song, a, cfg), "sec": s,
                           "text": cfg.t.section.ref.format(other=song["sections"][ref]["name"],
                                                            a=ranges[ref][0], b=ranges[ref][1])})
         else:
             for k, (lo, p, reps) in enumerate(collapse(list(range(a, b + 1)), song, cfg, starts, limit, fold)):
                 units.append({"kind": "bars", "bars": list(range(lo, lo + p)), "reps": reps,
                               "label": name if lo == a else None, "sec": s,
-                              "time": start_time(song, a) if lo == a else "",
+                              "time": shown_time(song, a, cfg) if lo == a else "",
                               "width": sum(bar_width(x, song, cfg) for x in range(lo, lo + p))
                               + (18 if reps > 1 else 0)})
         seen.append(s)

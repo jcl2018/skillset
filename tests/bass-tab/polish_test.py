@@ -98,7 +98,32 @@ def c1():
     render("v2-report.py")
     if strs().count("missing") != 1:
         fail("the missing bar is not marked 'missing' on the chart: %r" % strs().count("missing"))
+    missing_cost()
     print("1 ok")
+
+
+def missing_cost():
+    """A song with missing bars must plan in work that grows with its length, not with its square."""
+    out = ['META = {"title": "Cost Fixture"}', "BARS = {}", "SECTIONS = {}"]
+    for n in range(1, 121):
+        if n % 12 == 1:
+            out.append('SECTIONS[%d] = {"name": "P%d", "notes": [], "same_as": None}' % (n, n))
+        out.append('BARS[%d] = [{"E": (%d, "")}] + [None] * 7' % (n, n % 11 + 1))
+    out.append('REPORT = {"missing": %r, "estimates": %r}' % (list(range(5, 121, 6)), list(range(3, 121, 6))))
+    p = os.path.join(tempfile.mkdtemp(), "cost.py")
+    open(p, "w").write("\n".join(out) + "\n")
+    calls, real = [0], chartplan.natural
+
+    def counting(*a, **k):
+        calls[0] += 1
+        return real(*a, **k)
+    chartplan.natural = counting
+    try:
+        render(p)
+    finally:
+        chartplan.natural = real
+    if calls[0] > 120 * 120:
+        fail("missing bars make planning quadratic: %d width computations for 120 bars" % calls[0])
 
 
 def c2():
@@ -140,7 +165,33 @@ def c4():
     render("v2-sparse.py")
     if any(re.match(r"^\d+:\d\d$", s) for s in strs()):
         fail("a song with no tempo got a section time")
+    wide_time_format()
     print("4 ok")
+
+
+def wide_time_format():
+    """A template that wraps the time in words must pack by the text that is drawn, so labels stay apart."""
+    import json
+    t = json.load(open(chart2pdf.chartformat.DEFAULT))
+    t["section"]["time"] = "Start time: {t}"
+    t["ladder"] = t["ladder"][:1]      # the 12 pt rung: one-bar sections are 35 wide and share a line
+    d = tempfile.mkdtemp()
+    tp = os.path.join(d, "t.json")
+    json.dump(t, open(tp, "w"))
+    out = ['META = {"title": "Time Fixture", "tempo": 100, "time": "4/4"}', "BARS = {}", "SECTIONS = {}"]
+    for n in range(1, 5):
+        out.append('SECTIONS[%d] = {"name": "%s", "notes": [], "same_as": None}' % (n, "ABCD"[n - 1]))
+        out.append('BARS[%d] = [{"E": (%d, "")}] + [None] * 7' % (n, n))
+    sp = os.path.join(d, "s.py")
+    open(sp, "w").write("\n".join(out) + "\n")
+    render(sp, template=tp)
+    items = [x for x in TXT if x[2] in ("A", "B", "C", "D") or x[2].startswith("Start time: ")]
+    items.sort(key=lambda x: (-round(x[1]), x[0]))
+    for a, b in zip(items, items[1:]):
+        if abs(a[1] - b[1]) < 1 and a[0] + chart2pdf.string_width(a[2], a[3], a[4]) > b[0] + 0.01:
+            fail("section text %r overlaps %r with a wide time format" % (a[2], b[2]))
+    if len([x for x in items if x[2].startswith("Start time: ")]) != 4:
+        fail("the time format did not apply to each section")
 
 
 def c5():
@@ -182,7 +233,33 @@ def c6():
         near = [c for c in chords if c[0] > cx and c[0] < cx + w + 4 and c[1] >= cy - z and c[1] <= cy + z]
         if near or any(c[1] >= cy for c in chords if c[0] < cx + w and c[0] + 8 > cx):
             fail("x2 is not above the chord row, beside a chord name")
+    count_over_numbers()
     print("6 ok")
+
+
+def count_over_numbers():
+    """A repeat on a line with no section label (a section's second line) must not land on a bar number."""
+    out = ['META = {"title": "Count Fixture", "tempo": 100, "time": "4/4"}', "BARS = {}"]
+    for n in range(1, 61):
+        fret = 3 if 41 <= n <= 48 else n % 12 + 1
+        out.append('BARS[%d] = [{"E": (%d, "")}] + [None] * 7' % (n, fret))
+    out.append('SECTIONS = {1: {"name": "Long", "notes": [], "same_as": None}}')
+    p = os.path.join(tempfile.mkdtemp(), "c.py")
+    open(p, "w").write("\n".join(out) + "\n")
+    render(p)
+    size = tpl().bar_numbers.size
+    counts = [t for t in TXT if re.fullmatch(r"x\d+", t[2])]
+    nums = [t for t in TXT if t[3] == "F3" and t[4] == size and t[2].isdigit()]
+    labels = [t for t in TXT if t[2] == "Long"]
+    if not counts or not nums or any(abs(c[1] - labels[0][1]) < 5 for c in counts):
+        fail("count fixture: the repeat is not on a line without a section label")
+    for c in counts:
+        w = chart2pdf.string_width(c[2], c[3], c[4])
+        for n in nums:
+            nw = chart2pdf.string_width(n[2], n[3], n[4])
+            if n[0] < c[0] + w and c[0] < n[0] + nw and n[1] < c[1] + c[4] * 0.72 and c[1] < n[1] + n[4] * 0.72:
+                fail("repeat count %r (%.1f, %.1f) lands on bar number %r (%.1f, %.1f)"
+                     % (c[2], c[0], c[1], n[2], n[0], n[1]))
 
 
 def c7():
@@ -443,8 +520,28 @@ def count_boxes():
                        % (name, c[2], c0, c1, n[2], n[0], n1))
 
 
+def count_stack():
+    """Counts pushed past one long label must not land on each other."""
+    out = ['META = {"title": "Stack Fixture", "tempo": 100, "time": "4/4"}', "BARS = {}"]
+    for n in range(1, 73):
+        out.append('BARS[%d] = [{"E": (%d, "")}] + [None] * 7' % (n, (n - 1) // 12 % 2 + 1))
+    out.append('SECTIONS = {1: {"name": "Verse with a pretty long label name here", "notes": [], "same_as": None}}')
+    p = os.path.join(tempfile.mkdtemp(), "s.py")
+    open(p, "w").write("\n".join(out) + "\n")
+    render(p)
+    counts = [x for x in TXT if re.fullmatch(r"x\d+", x[2])]
+    expect(len(counts) > 2, "stack fixture: expected several repeat counts, got %d" % len(counts))
+    for i, a in enumerate(counts):
+        for b in counts[i + 1:]:
+            if abs(a[1] - b[1]) < 8:
+                a1, b1 = a[0] + chart2pdf.string_width(a[2], a[3], a[4]), b[0] + chart2pdf.string_width(b[2], b[3], b[4])
+                expect(a1 <= b[0] or b1 <= a[0], "repeat counts %r and %r overlap (%.1f-%.1f, %.1f-%.1f)"
+                       % (a[2], b[2], a[0], a1, b[0], b1))
+
+
 def c13():
     count_boxes()
+    count_stack()
     mutate(chart2pdf, "count_x", lambda cx, w, boxes, gap: cx - w / 2.0, count_boxes,
            "a repeat count ignores the section label")
     print("13 ok")

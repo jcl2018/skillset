@@ -206,7 +206,7 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
         pdf.text(MARGIN, y - 11, lab, "F2", ssz)
         x = MARGIN + string_width(lab, "F2", ssz) + 6
         if u["time"]:
-            tm = t.section.time.format(t=u["time"])
+            tm = u["time"]
             pdf.text(x, y - 11, tm, "F3", t.section.time_size, gray=0.4)
             x += string_width(tm, "F3", t.section.time_size) + 6
         pdf.text(x, y - 11, u["text"], "F4", 9.0, gray=0.3)
@@ -218,8 +218,9 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
     cy = y - 3
     if any(u["reps"] > 1 for u in ln):
         cy -= 10                              # the repeat counts sit on a row of their own, above everything
-    count_y, lab_y = cy - 8, cy - 10
-    if any(u["label"] for u in ln):
+    named = any(u["label"] for u in ln)
+    count_y, lab_y = (cy - 8 if named else cy + 2), cy - 10     # no label: the count takes its own row
+    if named:
         cy -= 12
     num_y, cy = cy - t.bar_numbers.size, cy - t.bar_numbers.size - 2
     has_chord = any(song["chords"].get(b) for u in ln for b in u["bars"])
@@ -252,7 +253,7 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
                 pdf.text(x + 1, lab_y, u["label"], "F2", ssz)
                 end = x + 1 + string_width(u["label"], "F2", ssz)
                 if u["time"]:
-                    tm = t.section.time.format(t=u["time"])
+                    tm = u["time"]
                     pdf.text(end + 4, lab_y, tm, "F3", t.section.time_size, gray=0.4)
                     end += 4 + string_width(tm, "F3", t.section.time_size)
                 boxes.append((x + 1, end))
@@ -281,7 +282,9 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
             counts.append((x - 1.5, lbl))
     for cx, lbl in counts:
         w = string_width(lbl, "F2", 9.0)
-        pdf.text(count_x(cx, w, boxes, t.section.count_gap), count_y, lbl, "F2", 9.0)
+        x = count_x(cx, w, boxes, t.section.count_gap)
+        pdf.text(x, count_y, lbl, "F2", 9.0)
+        boxes.append((x, x + w))                  # the next count keeps clear of this one too
     clef, step = 7.5, (ys[0] - ys[-1]) / 3.0
     for k, ch in enumerate("TAB" if t.staff.clef else ""):
         pdf.text(MARGIN + 1.5, ys[0] - (k + 0.5) * step - clef * 0.33, ch, "F2", clef)
