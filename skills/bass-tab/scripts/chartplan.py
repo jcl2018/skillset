@@ -49,8 +49,14 @@ def bar_width(num, song, cfg):
     return max(w, need)
 
 
+def missing(song):
+    """REPORT["missing"] bars: empty because the source lacks them, never a repeat or a reference."""
+    return set((song.get("report") or {}).get("missing") or [])
+
+
 def sections_identical(song, a, b, a2, b2):
-    if b - a != b2 - a2:
+    miss = missing(song)
+    if b - a != b2 - a2 or any(x in miss for x in list(range(a, b + 1)) + list(range(a2, b2 + 1))):
         return False
     return all(song["bars"][a + k] == song["bars"][a2 + k]
                and (song["lyrics"].get(a + k) or "") == (song["lyrics"].get(a2 + k) or "")
@@ -61,6 +67,7 @@ def collapse(nums, song, cfg, starts, limit):
     """[lo, period, reps] runs. A repeat never swallows a section start, and a
     figure wider than a line is not collapsed. Lyrics must match as well as notes."""
     bars, lyr, out, i, n = song["bars"], song["lyrics"], [], 0, len(nums)
+    miss = missing(song)
     while i < n:
         best = (1, 1)
         for p in range(1, cfg.maxp + 1):
@@ -73,7 +80,8 @@ def collapse(nums, song, cfg, starts, limit):
             reps = 1
             while i + (reps + 1) * p <= n:
                 j = i + reps * p
-                if any(nums[j + k] in starts or bars[nums[j + k]] != bars[nums[i + k]]
+                if any(nums[j + k] in starts or nums[i + k] in miss or nums[j + k] in miss
+                       or bars[nums[j + k]] != bars[nums[i + k]]
                        or (lyr.get(nums[j + k]) or "") != (lyr.get(nums[i + k]) or "")
                        for k in range(p)):
                     break

@@ -55,6 +55,18 @@ def first_stave(cs):
     return rows[:n]
 
 
+def first_labels(cs):
+    """The string-letter texts of the first system, top to bottom."""
+    sz = chart2pdf.chartformat.load().staff.label_size
+    out = []
+    for c in cs:
+        if c[0] == "t" and c[4] == "F3" and c[5] == sz:
+            out.append(c)
+        elif out:
+            break
+    return out
+
+
 def cli(*args):
     p = subprocess.run([sys.executable] + list(args), capture_output=True, text=True)
     return p.returncode, p.stdout + p.stderr
@@ -114,6 +126,17 @@ def report():
     sec = [s for s in after if "Chorus" in s and "not shown" in s]
     if not sec or not any("Verse" in s and "invented source one" in s for s in after):
         fail("source per section wrong: %r" % after)
+    # Value: protects=missing bars never fold into a repeat or a section reference; fails_when=collapse
+    # or sections_identical ignore REPORT missing; why_new=no fixture had adjacent missing bars; seam=none
+    sg = chart2pdf.read_song(os.path.join(here, "v2-report.py"))
+    sg["bars"] = {b: [None] * sg["slots"] for b in sg["bars"]}
+    sg["lyrics"], sg["chords"] = {}, {}
+    rung = [c for c in chart2pdf.ladder(chart2pdf.chartformat.load()) if c.secref][-1]
+    for rep, folds in (({}, True), ({"missing": sorted(sg["bars"])}, False)):
+        sg["report"] = rep
+        us = chart2pdf.plan_units(sg, rung, 480)
+        if any(u["kind"] == "ref" or u["reps"] > 1 for u in us) != folds:
+            fail("missing bars folded into a repeat or reference" if not folds else "control did not fold")
     plain = " ".join(texts(render("v2-sparse.py")))
     if plain.count("not shown") < 3 + 7:
         fail("a song with no REPORT must print 'not shown' for each part")
@@ -156,6 +179,22 @@ def report():
         fail("tabgen must print a plain-string sources as one source: %r" % out)
     refused("chart2pdf.py", mutant("v2-sparse.py", "BARS = {n: [{\"E\": (0, \"\")}] * 8 for n in range(1, 5)}",
                                    "BARS = {}"), "BARS")
+    # Value: protects=an empty REPORT list prints none_text, an absent part prints missing_text; fails_when=report_lines conflates [] with None; why_new=no fixture had an empty list that rendered; seam=none; no_claim=wrapping
+    t = " ".join(texts(render_path(mutant("v2-report.py", '"missing": [7]', '"missing": []'))))
+    if "Missing bars: none" not in t or "Missing bars: not shown" in t:
+        fail("an empty REPORT list must print 'none', not 'not shown'")
+    # Value: protects=a report that misses page 1 starts a new page above the bottom margin; fails_when=paginate stops adding the spill page; why_new=only the over-a-page refusal was tested; seam=none; no_claim=exact y
+    spill = os.path.join(tempfile.mkdtemp(), "spill.py")
+    open(spill, "w").write(
+        'META = {"title": "Spill Fixture"}\n'
+        'BARS = {n: [{"E": (0, "")}] * 8 for n in range(1, 50)}\n'
+        'SECTIONS = {n: {"name": "Part %d" % n, "notes": [], "same_as": None} for n in range(1, 50, 2)}\n'
+        'REPORT = {"sections": {n: "invented source" for n in range(1, 50, 2)}}\n')
+    calls.clear()
+    _, st = chart2pdf.render(chart2pdf.read_song(spill), "letter")
+    low = min(c[2] for c in calls if c[0] == "t" and ("Source report" in c[3] or "Part 49 (" in c[3]))
+    if st["pages"] != 2 or low < chart2pdf.MARGIN + 20:
+        fail("a spilling report must move to page 2 above the margin: pages %d, y %s" % (st["pages"], low))
     print("report ok")
 
 
@@ -186,6 +225,16 @@ def five():
     refused("chart2pdf.py", mutant("chart-song.py", "META = {", 'META = {"open": {"E": "Eb"}, '), "is not a note")
     refused("chart2pdf.py", mutant("chart-song.py", "META = {", 'META = {"open": {"Q": "D"}, '), "is not a row")
     refused("chart2pdf.py", mutant("chart-song.py", "META = {", 'META = {"open": {"B": "A"}, '), "4-string")
+    # Value: protects=a 5-string fret prints on its own (B lowest, E next) line; fails_when=draw_bar maps rows in the wrong order; why_new=the stave/label check never looks at digits; seam=none; no_claim=x position
+    cs = render("v2-five.py")
+    ys = [c[2] for c in first_stave(cs)]
+    dig = [c for c in cs if c[0] == "t" and c[4] == "F1"][:2]
+    if [d[3] for d in dig] != ["1", "2"] or abs(dig[0][2] + 3.3 - ys[4]) > 0.1 or abs(dig[1][2] + 3.3 - ys[3]) > 0.1:
+        fail("5-string frets not on the B and E lines: %r vs %r" % (dig, ys))
+    # Value: protects=a 5-string song may retune its B row and the label follows; fails_when=check_song refuses open B regardless of string count; why_new=only the 4-string refusal was tested; seam=none; no_claim=pitch math
+    low_a = mutant("v2-five.py", '"strings": 5,', '"strings": 5, "open": {"B": "A"},')
+    if [c[3] for c in first_labels(render_path(low_a))] != ["G", "D", "A", "E", "A"]:
+        fail("a 5-string open B retune was not drawn as A on the bottom row")
     sharp = mutant("chart-song.py", "META = {", 'META = {"open": {"G": "G#"}, ', )
     cs = render_path(sharp)
     stave_x = min(c[1] for c in cs if c[0] == "r" and c[3] == 0.45)
@@ -223,6 +272,14 @@ def template():
     cs = render("chart-song.py", template=p)
     if "2 times" not in texts(cs) or not any(c[0] == "t" and c[3] == "Intro" and c[5] == 12.0 for c in cs):
         fail("repeat format or section size did not follow the template")
+    # Value: protects=section.ref sets the collapsed-section line; fails_when=chartplan hardcodes the reference text; why_new=refs were only counted; seam=none; no_claim=placement
+    rt = json.loads(json.dumps(t))
+    rt["section"]["ref"] = "same as {other}, {a} to {b}"
+    write(rt)
+    calls.clear()
+    chart2pdf.render(chart2pdf.read_song(os.path.join(here, "chart-song.py")), "letter", True, p)
+    if not any(s.startswith("same as ") and " to " in s for s in texts(calls)):
+        fail("section.ref did not set the reference line")
     if render("chart-song.py") != render("chart-song.py", template=base):
         fail("the default template differs from no --template")
     rc, out = cli(os.path.join(scripts, "chart2pdf.py"), os.path.join(here, "chart-song.py"),
