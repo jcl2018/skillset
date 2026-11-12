@@ -71,9 +71,13 @@ Review: **Reviewed 2026-11-11** <!-- prd P=6aa551e5 R=b0c8c702 N=a7f35ab3 M=708e
 | [bas-chart-layout](Tests#t-bas-chart-layout) | requirement | BAS-2 | Given an invented song with sections, repeats and lyrics, when its chart is rendered, then each section has a bold label, the repeated bars print once with a count, and each lyric sits under its own bar. | PASS 2026-11-09 |
 | [bas-sources-only](Tests#t-bas-sources-only) | requirement | BAS-6 | Given sources for a song, when the agent writes the song file, then every bar and lyric comes from a source, which only a person reading the source report can check. | not run |
 | - | requirement | BAS-6 | no passing test | not enforced |
+| [bas-header](Tests#t-bas-header) | requirement | BAS-7 | Given a song whose source shows only a title, when its chart is rendered, then the title row and every header field print in template order, each missing one reading "not shown". | not run |
 | - | requirement | BAS-7 | no passing test | not enforced |
+| [bas-source-report](Tests#t-bas-source-report) | requirement | BAS-8 | Given a song with a source report, when its chart is rendered, then missing bars, estimates and the source per section print after the last stave line, a missing part reads "not shown", and a bad report key is refused. | not run |
 | - | requirement | BAS-8 | no passing test | not enforced |
+| [bas-five-string](Tests#t-bas-five-string) | requirement | BAS-9 | Given a 5-string and a 4-string song, when each chart is rendered, then the first draws five stave lines labeled G D A E B and the second four labeled G D A E, and the text tab refuses the 5-string song. | not run |
 | - | requirement | BAS-9 | no passing test | not enforced |
+| [bas-template](Tests#t-bas-template) | requirement | BAS-10 | Given a changed copy of the format template, when two songs are rendered through it, then the header order, missing text, repeat format, section size and line gap all follow it, and a bad template is refused by name. | not run |
 | - | requirement | BAS-10 | no passing test | not enforced |
 | [bas-chart-fit](Tests#t-bas-chart-fit) | requirement | BAS-3 | Given a normal song and a 400-bar song, when each chart is rendered, then the first fits two pages with tab digits at 9 pt or more and the second is refused with a line naming it. | PASS 2026-11-09 |
 | [bas-pdf-same](Tests#t-bas-pdf-same) | requirement | BAS-4 | Given one song file, when the tab PDF and the chart PDF are each rendered twice, then both copies are identical byte for byte. | PASS 2026-11-09 |
