@@ -3,7 +3,7 @@
 
 Milestone: https://github.com/jcl2018/skillset/milestone/1
 
-Review: **Reviewed 2026-11-11** <!-- prd P=6aa551e5 R=b0c8c702 N=a7f35ab3 M=708ea665 U=5eba4128 -->
+Review: **Reviewed 2026-11-12** <!-- prd P=6aa551e5 R=b0c8c702 N=a7f35ab3 M=708ea665 U=d3a02caf -->
 
 ## Problem
 - I learn bass lines from many places: tab videos on YouTube and Bilibili, tab sites like Songsterr, other sites I find, screenshots and PDFs.
