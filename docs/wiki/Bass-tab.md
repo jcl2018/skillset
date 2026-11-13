@@ -27,6 +27,7 @@ Review: **Unreviewed**
   - A repeated figure is drawn once with its count (x4).
   - A section that repeats an earlier one is one line ("Chorus 2 = Chorus").
   - Chord names sit over their bars, and each lyric under its own bar.
+  - A lyric prints in its own band under the lowest string and any rhythm marks, never on a string line or a fret digit, the estimate mark or a repeat count; one wider than its bar widens the bar, then wraps to a second line, then shrinks to the template's lyric minimum, and never runs into the next bar.
   - A section starts on a new line and, when the song has a tempo, its label carries its start time.
   - A repeat count sits above the closing repeat sign, clear of chord names and bar numbers.
   - A missing bar is drawn full width and marked "missing"; two or more plain missing bars in a row print as one line with their range, cut at each section start.

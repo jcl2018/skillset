@@ -47,6 +47,9 @@ for c in header report five template; do python3 "$here/v2_test.py" "$c" >/dev/n
 for c in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do python3 "$here/polish_test.py" "$c" >/dev/null || fail "chart polish $c check failed"; done
 python3 "$here/polish_test.py" count >/dev/null || fail "polish CASES, this loop and the chart-polish regression rows disagree"
 
+# 3f. Lyric band: clear of strings, digits, marks and other lyrics; wide lyrics widen, wrap, then shrink (placeholder text).
+for c in boxes norhythm limits order; do python3 "$here/lyric_test.py" "$c" >/dev/null || fail "lyric band $c check failed"; done
+
 # 4. Every script stays under 20 KB.
 for f in "$scripts"/*.py; do
   [ "$(wc -c < "$f")" -lt 20480 ] || fail "$f is 20 KB or more"

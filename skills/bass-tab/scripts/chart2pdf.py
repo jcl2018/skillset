@@ -23,6 +23,7 @@ import chartformat
 from tabcore import SLOTS, rhythm_cells, row_label, section_ranges, strings_for
 from tabgen import load_song
 import chartplan
+import lyriclay
 from chartplan import UNIT, bar_width, ladder, pack, plan_units, slot_widths
 
 MAX_PAGES = 2
@@ -82,8 +83,7 @@ def line_height(line, song, cfg):
         h += 10
     if cfg.rhythm and line[0]["kind"] != "gap":      # a run's line draws no rhythm row
         h += 1.4 * g + 3
-    if any(song["lyrics"].get(b) for b in bars):
-        h += 11
+    h += lyriclay.height(line, song, cfg, g, bar_width)
     return h + 4
 
 
@@ -113,6 +113,7 @@ def foot_blocks(song, usable):
 def paginate(song, cfg, w, h):
     usable = w - 2 * MARGIN
     avail = usable - gutter(cfg, song)
+    cfg.lyric_cap = avail * lyriclay.LYRIC_CAP
     lines = pack(plan_units(song, cfg, avail - 20), avail, cfg.t.section.size, cfg.t.section.time_size)
     top = h - MARGIN
     bottom = MARGIN + 26
@@ -307,7 +308,7 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
                 pdf.approx(x + bw - t.marks.estimate_room / 2.0, ys[0] + 5, t.marks.estimate_size * 0.8)
             lyr = song["lyrics"].get(num)
             if lyr:
-                pdf.text(x + 2, ys[-1] - (1.4 * g + 3 if cfg.rhythm else 0) - 9, lyr, "F3", t.lyrics.size)
+                lyriclay.draw(pdf, lyr, x, bw, ys[-1], g, cfg)
             x += bw
             if not (reps and bi == len(u["bars"]) - 1):
                 pdf.stem(x, ys[-1] - 0.5, ys[0] + 0.5, w=0.7)

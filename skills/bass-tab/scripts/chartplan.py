@@ -61,7 +61,7 @@ def natural(num, song, cfg):
     need = string_width(str(num), "F3", cfg.t.bar_numbers.size) + 3
     lyr = song["lyrics"].get(num) or ""
     if lyr:
-        need = max(need, string_width(lyr, "F3", cfg.t.lyrics.size) + 4)
+        need = max(need, min(string_width(lyr, "F3", cfg.t.lyrics.size) + 4, getattr(cfg, "lyric_cap", 1e9)))
     ch = song["chords"].get(num) or ""
     room = sign_room(song, num, cfg)
     if ch or room:

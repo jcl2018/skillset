@@ -25,7 +25,7 @@ REQUIRED = ["missing_text", "title_row.left", "title_row.right", "title_row.size
             "marks.size", "marks.estimate_size", "marks.estimate_room", "staff.label_size", "staff.gap", "staff.clef", "chords.size",
             "lyrics.size", "ladder"]
 SIZES = ["title_row.size", "title_row.right_size", "header_size", "report.size", "section.size", "section.time_size", "section.count_gap",
-         "bar_numbers.size", "marks.size", "marks.estimate_size", "marks.estimate_room", "staff.label_size", "staff.gap", "chords.size", "lyrics.size"]
+         "bar_numbers.size", "marks.size", "marks.estimate_size", "marks.estimate_room", "staff.label_size", "staff.gap", "chords.size", "lyrics.size", "lyrics.min_size"]
 
 
 def _bad(path, why):
@@ -100,12 +100,15 @@ def load(path=None):
                 raise ValueError("ladder")
         # The code keeps the fitting order: bigger digits first, the template's order within a size.
         raw["ladder"] = sorted((r for r in raw["ladder"] if r["fs"] >= MIN_FS), key=lambda r: -r["fs"])
+        raw["lyrics"].setdefault("min_size", min(6.5, raw["lyrics"]["size"]))   # optional: older templates lack it
         for key in SIZES:
             *up, last = key.split(".")
             cur = raw
             for part in up:
                 cur = cur[part]
             cur[last] = _num(cur[last])
+        if raw["lyrics"]["min_size"] > raw["lyrics"]["size"]:
+            raise ValueError("lyrics.min_size")     # the shrink floor is not above the lyric size
         if raw["marks"]["estimate_room"] < raw["marks"]["estimate_size"]:
             raise ValueError("estimate_room")       # the sign must fit the room kept for it
         texts = [raw["title_row"]["left"], raw["title_row"]["right"], raw["missing_text"],
