@@ -223,7 +223,7 @@ def plan_units(song, cfg, limit):
                 parts += [("bars", pos, lo - 1), ("gap", lo, hi)]
                 pos = hi + 1
             parts.append(("bars", pos, b))
-            for kind, x, y in parts:
+            for k, (kind, x, y) in enumerate(parts):
                 if y < x:
                     continue
                 if kind == "gap":
@@ -234,7 +234,8 @@ def plan_units(song, cfg, limit):
                     continue
                 for lo, p, reps in collapse(list(range(x, y + 1)), song, cfg, starts, limit, fold):
                     units.append({"kind": "bars", "bars": list(range(lo, lo + p)), "reps": reps,
-                                  "label": name if lo == a else None, "sec": s,
+                                  "label": name if lo == a else None, "sec": s, "after_gap": x != a,
+                                  "before_gap": k + 1 < len(parts),
                                   "time": shown_time(song, a, cfg) if lo == a else "",
                                   "width": sum(bar_width(z, song, cfg) for z in range(lo, lo + p))
                                   + (18 if reps > 1 else 0)})
@@ -243,8 +244,8 @@ def plan_units(song, cfg, limit):
 
 
 def continues(g):
-    """A group that does not start its section (it follows a run) is the section's tail."""
-    return g[0]["label"] is None
+    """A group that follows a run in its own section is that section's tail."""
+    return g[0].get("after_gap", False)
 
 
 def pack(units, avail, lab_size=10.0, time_size=8.0):
@@ -265,7 +266,8 @@ def pack(units, avail, lab_size=10.0, time_size=8.0):
             lines.append(g)
             cur, x, label_end, tail = [], 0.0, -1.0, False
             continue
-        if cur and (tail or x + sum(u["width"] for u in g) > avail or x < label_end):
+        whole = not g[0].get("before_gap", False)     # bars that run into a run are not a whole section
+        if cur and (tail or not whole or x + sum(u["width"] for u in g) > avail or x < label_end):
             lines.append(cur)
             cur, x, label_end, tail = [], 0.0, -1.0, False
         for u in g:

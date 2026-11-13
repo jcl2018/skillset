@@ -108,7 +108,7 @@ def missing_cost():
     for n in range(1, 121):
         if n % 12 == 1:
             out.append('SECTIONS[%d] = {"name": "P%d", "notes": [], "same_as": None}' % (n, n))
-        out.append('BARS[%d] = [{"E": (%d, "")}] + [None] * 7' % (n, n % 11 + 1))
+        out.append('BARS[%d] = %s' % (n, "[None] * 8" if 100 <= n <= 110 else '[{"E": (%d, "")}] + [None] * 7' % (n % 11 + 1)))
     out.append('REPORT = {"missing": %r, "estimates": %r}' % (sorted(set(range(5, 121, 6)) | set(range(100, 111))), [n for n in range(3, 121, 6) if n not in range(100, 111)]))
     p = os.path.join(tempfile.mkdtemp(), "cost.py")
     open(p, "w").write("\n".join(out) + "\n")
@@ -124,6 +124,8 @@ def missing_cost():
         chartplan.natural = real
     if calls[0] > 120 * 120:
         fail("missing bars make planning quadratic: %d width computations for 120 bars" % calls[0])
+    expect(any(u["kind"] == "gap" for ln in LINES for u in ln),
+           "the cost fixture planned no run of missing bars, so the run path's cost is not checked")
 
 
 def c2():
@@ -602,12 +604,25 @@ def run_fixture():
     expect(chartplan.bar_width(5, song, cfg) >= wide - 0.01, "the lone missing bar 5 is narrower than a real bar")
 
 
+def pdf_streams(data):
+    """The PDF's streams, decompressed, with its page sizes and fonts: what it draws, independent of the
+    zlib build that packed it."""
+    import zlib
+    out, pos = [], 0
+    while True:
+        m = re.compile(rb"/Length (\d+) >>\nstream\n").search(data, pos)
+        if not m:          # plus the page sizes and fonts, which live outside the streams
+            return b"".join(out + re.findall(rb"/MediaBox \[[^\]]*\]|/BaseFont /[A-Za-z-]+", data))
+        pos = m.end() + int(m.group(1))
+        out.append(zlib.decompress(data[m.end():pos]))
+
+
 def run_single():
-    """One missing bar: the same PDF bytes as before this change, and one per-bar mark."""
+    """One missing bar: the same drawing as before this change, and one per-bar mark."""
     import hashlib
     data, _ = chart2pdf.render(chart2pdf.read_song(os.path.join(here, "v2-report.py")), "letter")
     want = open(os.path.join(here, "missing-one.sha256")).read().strip()
-    expect(hashlib.sha256(data).hexdigest() == want, "a single missing bar's chart changed")
+    expect(hashlib.sha256(pdf_streams(data)).hexdigest() == want, "a single missing bar's chart changed")
     render("v2-report.py")
     expect(strs().count(tpl().marks.missing) == 1 and not any("bars" in x and "missing" in x for x in strs()),
            "a lone missing bar is not one per-bar mark")
@@ -619,6 +634,14 @@ def run_template_checks():
             chart2pdf.chartformat.load(run_template(bad))
         except SystemExit as e:
             expect("marks.missing_run" in str(e), "bad wording %r refused without naming the key: %s" % (bad, e))
+            continue
+        expect(False, "wording %r was accepted" % bad)
+    for bad, why in (("", "both"), ("bars from {a}", "both"), ("bars {a:>3}-{b}", "format spec"),
+                     ("bars {a}-{b} {", "brace")):
+        try:
+            chart2pdf.chartformat.load(run_template(bad))
+        except SystemExit as e:
+            expect(why in str(e), "wording %r refused without saying %r: %s" % (bad, why, e))
             continue
         expect(False, "wording %r was accepted" % bad)
     try:
@@ -640,9 +663,47 @@ def run_template_checks():
 def run_notes():
     song = chart2pdf.read_song(os.path.join(here, "polish-run.py"))
     song["bars"][12] = [{"E": (3, "")}] + [None] * 7      # a "missing" bar that holds notes stays a bar
-    cfg = chart2pdf.ladder(tpl())[0]
     runs = chartplan.missing_runs(song, 9, 40, chartplan.missing(song))
     expect(runs == [(9, 11), (13, 38)], "a bar with notes was swallowed into a run: %r" % runs)
+
+
+def run_names():
+    """A song with no missing bar packs the same whatever its sections are called, None included."""
+    cfg, counts = chart2pdf.ladder(tpl())[0], []
+    for nm in ('"S%d" % n', "None"):
+        p = os.path.join(tempfile.mkdtemp(), "names.py")
+        open(p, "w").write('META = {"title": "Names"}\nBARS = {n: [{"E": (n, "")}] + [None] * 7 for n in range(1, 9)}\n'
+                           'SECTIONS = {n: {"name": %s, "notes": [], "same_as": None} for n in (1, 3, 5, 7)}\n' % nm)
+        song = chart2pdf.read_song(p)
+        counts.append(len(chartplan.pack(chartplan.plan_units(song, cfg, 400), 420)))
+    expect(counts[0] == counts[1], "sections named None pack into %d lines, named ones into %d" % (counts[1], counts[0]))
+
+
+def run_head():
+    """A section whose bars run into a run never starts beside the previous section: it is not whole."""
+    p = os.path.join(tempfile.mkdtemp(), "head.py")
+    open(p, "w").write('META = {"title": "Head"}\nBARS = {n: [{"E": (n % 12, "")}] + [None] * 7 for n in range(1, 31)}\n'
+                       'SECTIONS = {n: {"name": "S%d" % n, "notes": [], "same_as": None} for n in (1, 3, 20, 22)}\n'
+                       'MISSING = list(range(5, 15)) + [29, 30]\nfor _n in MISSING:\n    BARS[_n] = [None] * 8\n'
+                       'REPORT = {"missing": MISSING, "estimates": []}\n')
+    render(p)
+    gapped = {u["sec"] for ln in LINES for u in ln if u["kind"] == "gap"}
+    late = [u["label"] for ln in LINES for u in ln[1:] if u["label"] and u["sec"] in gapped]
+    expect(not late, "a section holding a run starts beside another section: %r" % late)
+    after = [u["label"] for ln in LINES if ln[0].get("after_gap") for u in ln[1:] if u["label"]]
+    expect(not after, "a section starts beside the tail after a run: %r" % after)
+
+
+def run_rhythm_room():
+    """A run's line draws no rhythm row, so it keeps no room for one."""
+    import copy
+    song = chart2pdf.read_song(os.path.join(here, "polish-run.py"))
+    cfg = next(c for c in chart2pdf.ladder(tpl()) if c.rhythm)
+    flat = copy.copy(cfg)
+    flat.rhythm = False
+    ln = [next(u for u in chartplan.plan_units(song, cfg, 400) if u["kind"] == "gap")]
+    expect(chart2pdf.line_height(ln, song, cfg) == chart2pdf.line_height(ln, song, flat),
+           "a run's line keeps room for a rhythm row it never draws")
 
 
 def c14():
@@ -650,11 +711,17 @@ def c14():
     run_single()
     run_template_checks()
     run_notes()
+    run_names()
+    run_head()
+    run_rhythm_room()
     missing_cost()
     mutate(chartplan, "missing_runs", lambda *a, **k: [], run_fixture, "no run is ever found")
     mutate(chartplan, "plain", lambda *a, **k: True, lambda: (run_fixture(), run_notes()),
            "a bar with a chord, lyric or notes joins a run")
-    mutate(chartplan, "continues", lambda g: False, run_fixture, "the tail flag is lost after a gap")
+    mutate(chartplan, "continues", lambda g: False, run_head, "the tail flag is lost after a gap")
+    mutate(chartplan, "missing_runs", lambda *a, **k: [], missing_cost, "the cost fixture plans no run")
+    mutate(chartplan, "continues", lambda g: g[0]["label"] is None, run_names,
+           "a section named None is taken for the tail after a run")
     print("14 ok")
 
 

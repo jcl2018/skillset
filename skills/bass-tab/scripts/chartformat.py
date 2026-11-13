@@ -58,6 +58,22 @@ def _fields(fmt, allowed):
             raise ValueError(name)
 
 
+def _run_text(path, fmt):
+    """marks.missing_run names both {a} and {b}, bare, and nothing else; each refusal says why."""
+    bad = "has a bad value for 'marks.missing_run': "
+    try:
+        fields = [(n, s, c) for _, n, s, c in string.Formatter().parse(fmt) if n is not None]
+    except ValueError:
+        _bad(path, bad + "a brace is not closed (write {{ or }} for a literal brace)")
+    for n, s, c in fields:
+        if n not in ("a", "b"):
+            _bad(path, bad + "only {a} and {b} are allowed, not {%s}" % n)
+        if s or c:
+            _bad(path, bad + "{%s} takes no format spec or conversion" % n)
+    if {n for n, _, _ in fields} != {"a", "b"}:
+        _bad(path, bad + "it must name both {a} and {b}, so the chart shows the run's range")
+
+
 def load(path=None):
     path = path or DEFAULT
     try:
@@ -99,10 +115,7 @@ def load(path=None):
         texts += [p[k] for p in raw["report"]["parts"] for k in ("key", "label")]
         if not all(isinstance(x, str) for x in texts):
             raise ValueError("text")
-        try:
-            _fields(raw["marks"]["missing_run"], {"a", "b"})
-        except ValueError as e:
-            _bad(path, "has a bad value for 'marks.missing_run': only {a} and {b} are allowed, not {%s}" % e)
+        _run_text(path, raw["marks"]["missing_run"])
         _fields(raw["section"]["repeat"], {"n"})
         _fields(raw["section"]["ref"], {"other", "a", "b"})
         _fields(raw["section"]["time"], {"t"})

@@ -80,7 +80,7 @@ def line_height(line, song, cfg):
         h += 12
     if any(song["chords"].get(b) for b in bars):
         h += 10
-    if cfg.rhythm:
+    if cfg.rhythm and line[0]["kind"] != "gap":      # a run's line draws no rhythm row
         h += 1.4 * g + 3
     if any(song["lyrics"].get(b) for b in bars):
         h += 11
