@@ -41,3 +41,7 @@
 | <a id="t-docs-consolidate-1"></a>docs-consolidate-1 | requirement | done line docs-consolidate:1 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-13 |
 | <a id="t-docs-consolidate-2"></a>docs-consolidate-2 | requirement | done line docs-consolidate:2 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-13 |
 | <a id="t-docs-consolidate-3"></a>docs-consolidate-3 | requirement | done line docs-consolidate:3 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-13 |
+| <a id="t-lyric-layout-1"></a>lyric-layout-1 | requirement | done line lyric-layout:1 | not run | - | local | 2026-11-13 |
+| <a id="t-lyric-layout-2"></a>lyric-layout-2 | requirement | done line lyric-layout:2 | not run | - | local | 2026-11-13 |
+| <a id="t-lyric-layout-3"></a>lyric-layout-3 | requirement | done line lyric-layout:2 | not run | - | local | 2026-11-13 |
+| <a id="t-lyric-layout-4"></a>lyric-layout-4 | requirement | done line lyric-layout:1 | not run | - | local | 2026-11-13 |

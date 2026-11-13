@@ -25,7 +25,7 @@
   "marks": {"missing": "missing", "missing_run": "bars {a}-{b} missing", "size": 8.0, "estimate_size": 9.0, "estimate_room": 12.0},
   "staff": {"label_size": 7.5, "gap": 1.05, "clef": true},
   "chords": {"size": 9.0},
-  "lyrics": {"size": 8.5},
+  "lyrics": {"size": 8.5, "min_size": 6.5},
   "ladder": [
     {"fs": 12.0, "pad": 1.2, "secref": true, "maxp": 4, "rhythm": true, "pages": 1},
     {"fs": 11.0, "pad": 1.1, "secref": true, "maxp": 4, "rhythm": true, "pages": 1},
