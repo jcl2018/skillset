@@ -100,12 +100,7 @@ def load(path=None):
                 raise ValueError("ladder")
         # The code keeps the fitting order: bigger digits first, the template's order within a size.
         raw["ladder"] = sorted((r for r in raw["ladder"] if r["fs"] >= MIN_FS), key=lambda r: -r["fs"])
-        raw["lyrics"].setdefault("min_size", min(6.5, raw["lyrics"]["size"]))   # optional: older templates lack these three
-        raw["lyrics"].setdefault("max_widen", 1.5)      # a lyric widens its bar to at most this many times the bar's own width
-        raw["lyrics"].setdefault("lines", 2)            # then wraps onto at most this many lyric lines
-        raw["lyrics"]["max_widen"] = _num(raw["lyrics"]["max_widen"], 1.0)
-        if isinstance(raw["lyrics"]["lines"], bool) or not isinstance(raw["lyrics"]["lines"], int) or raw["lyrics"]["lines"] < 1:
-            raise ValueError("lyrics.lines")
+        raw["lyrics"].setdefault("min_size", min(6.5, raw["lyrics"]["size"]))   # optional: older templates lack it
         for key in SIZES:
             *up, last = key.split(".")
             cur = raw
