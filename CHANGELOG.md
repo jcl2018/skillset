@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.3 - 2026-11-13
+
+- Wiki: update pages for lyric-layout
+
+### How to verify
+
+No manual steps were recorded.
+
 ## v0.1.2 - 2026-11-12
 
 - Health: render docs, add health workflow, regression row, Bass-tab review
