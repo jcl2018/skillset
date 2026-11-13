@@ -14,7 +14,7 @@
   "pr_bumps_version": false,
   "version_file": "VERSION",
   "routines": [],
-  "regression_cron": "17 9 * * *",
+  "regression_cron": "17 */4 * * *",
   "health_cron": "47 */4 * * *",
   "judge_env": "ANTHROPIC_API_KEY",
   "judge_setup": "",
@@ -62,6 +62,26 @@
   },
   "prep_budget_minutes": 15,
   "feature_labels": false,
-  "template_version": "0.27.29",
-  "regression_runs": ""
+  "template_version": "0.27.58",
+  "regression_runs": "mac",
+  "automation": [
+    {
+      "name": "health",
+      "does": "Checks the repo, files findings (run by the Claude scheduled task skillset-health-regression on this Mac). [Runbook](https://github.com/jcl2018/agent-workflow-template/blob/v0.27.58/docs/wiki/Health.md#health-round)",
+      "cadence": "47 */4 * * *",
+      "runs": "mac:skillset-health-regression"
+    },
+    {
+      "name": "regression",
+      "does": "Runs the regression rows (run by the Claude scheduled task skillset-health-regression on this Mac). [Runbook](https://github.com/jcl2018/agent-workflow-template/blob/v0.27.58/docs/wiki/Regression.md#regression-round)",
+      "cadence": "17 */4 * * *",
+      "runs": "mac:skillset-health-regression"
+    },
+    {
+      "name": "digest email",
+      "does": "Mails the round's digest (run by the Claude scheduled task skillset-health-regression on this Mac). [Runbook](https://github.com/jcl2018/agent-workflow-template/blob/v0.27.58/docs/wiki/Health.md#health-round)",
+      "cadence": "with each health round",
+      "runs": "mac:skillset-health-regression"
+    }
+  ]
 }
