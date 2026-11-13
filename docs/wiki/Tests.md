@@ -15,6 +15,7 @@
 | <a id="t-bas-source-report"></a>bas-source-report | requirement | BAS-8 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-11 |
 | <a id="t-bas-five-string"></a>bas-five-string | requirement | BAS-9 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-11 |
 | <a id="t-bas-template"></a>bas-template | requirement | BAS-10 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-11 |
+| <a id="t-bas-nonlatin-chart"></a>bas-nonlatin-chart | requirement | BAS-5 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-13 |
 
 ## Other
 
@@ -37,3 +38,6 @@
 | <a id="t-chart-polish-12"></a>chart-polish-12 | requirement | done line chart-polish:1 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-12 |
 | <a id="t-chart-polish-13"></a>chart-polish-13 | requirement | done line chart-polish:1 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-12 |
 | <a id="t-chart-polish-14"></a>chart-polish-14 | requirement | done line missing-runs:1 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-12 |
+| <a id="t-docs-consolidate-1"></a>docs-consolidate-1 | requirement | done line docs-consolidate:1 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-13 |
+| <a id="t-docs-consolidate-2"></a>docs-consolidate-2 | requirement | done line docs-consolidate:2 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-13 |
+| <a id="t-docs-consolidate-3"></a>docs-consolidate-3 | requirement | done line docs-consolidate:3 | PASS | 2026-11-13 | [CI 2026-11-13](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-13) | 2026-11-13 |

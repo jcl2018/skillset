@@ -11,7 +11,7 @@ Review: **Unreviewed**
 - I want one compact printout that shows the whole song at a glance (sections, chords, lyrics, tempo and key) in the same format for every song, so I don't miss a part while I play along.
 
 ## Usage
-- `python3 skills/bass-tab/scripts/chart2pdf.py SONG -o OUT [--paper letter|a4] [--expand-sections] [--template PATH] [--allow-lossy]` — Renders a song file to the play-along chart PDF (US-Letter by default; layout from `skills/bass-tab/templates/chart-format.json` or `--template`) and prints `wrote OUT  (N bytes)  pages=N  tab_font_pt=N  lines=N  section_refs=N` (exit 0). Refuses a song that does not fit two pages (exit 1, `chart2pdf: TITLE does not fit 2 pages at 9 pt tab digits (needs N). Cut bars or split the song.`), non-Latin text without Pillow (exit 2, `refused: non-Latin text would print as '?'. Install Pillow (python3 -m venv v && v/bin/pip install pillow) or pass --allow-lossy.`, after a `warning: lossy: ...` line per text), a template file that is missing, not JSON, missing a key (a template from before `marks.missing_run` is refused with the line to add under `marks`) or with a `marks.missing_run` that does not name both `{a}` and `{b}`, holds any other field or gives one a format spec (the refusal says which), or with no 9 pt rung (exit 1, `chart2pdf: template PATH ...`), a song whose `REPORT` names a bar not in it, a section that is not a start bar, or that sets both `source` and `sources` (exit 1, one line naming the song), and a missing `-o` (exit 2, `chart2pdf.py: error: the following arguments are required: -o/--out`). The chart prints each bar's number (a run of missing bars prints its first number) and each section label's start time when the song has a tempo; a missing bar is drawn full width and marked "missing", two or more plain missing bars in a row print as one full-width line marked with their range (wording from `marks.missing_run`, `bars {a}-{b} missing` by default), a run is cut at each section start, and a missing bar that carries notes, a chord name or a lyric stays a bar of its own; run lines never cost a song a page or a digit size: at each step of the template's fitting ladder (several steps share a digit size) the chart lays the song out both with run lines and with one row per missing bar, and keeps the run lines unless they do not fit or one row per bar takes fewer pages, so a song is never shrunk, lengthened or refused for its runs, an estimated bar carries a "≈" sign, a section starts on a new line instead of sharing one with the last bars of the one before, and the repeat count sits above the closing repeat sign. A section that repeats an earlier one collapses to one reference line unless `--expand-sections` keeps it drawn out (`--collapse-sections` is still accepted and is now the default), a song that fits one page gets larger tab digits (11 or 12 pt), and a header field with no value, or a source report with no report, no list and no source named, is left out (an empty missing or estimates list still prints "none"). An estimated bar and a section holding one are always drawn out, never folded into a repeat or a reference line, and repeats and references also stop at a change of chord, so a song with estimates may print at a smaller size than one without; the estimate sign has its own room (`marks.estimate_room`) so it never meets a chord name.
+- `python3 skills/bass-tab/scripts/chart2pdf.py SONG -o OUT [--paper letter|a4] [--expand-sections] [--template PATH] [--allow-lossy]` — Renders a song file to the play-along chart PDF (US-Letter by default; layout from `skills/bass-tab/templates/chart-format.json` or `--template`) and prints `wrote OUT  (N bytes)  pages=N  tab_font_pt=N  lines=N  section_refs=N` (exit 0). Refuses a song that does not fit two pages (exit 1, `chart2pdf: TITLE does not fit 2 pages at 9 pt tab digits (needs N). Cut bars or split the song.`), non-Latin text without Pillow (exit 2, `refused: non-Latin text would print as '?'. Install Pillow (python3 -m venv v && v/bin/pip install pillow) or pass --allow-lossy.`, after a `warning: lossy: ...` line per text), a template file that is missing, not JSON, missing a key (a template from before `marks.missing_run` is refused with the line to add under `marks`) or with a `marks.missing_run` that does not name both `{a}` and `{b}`, holds any other field or gives one a format spec (the refusal says which), or with no 9 pt rung (exit 1, `chart2pdf: template PATH ...`), a song whose `REPORT` names a bar not in it, a section that is not a start bar, or that sets both `source` and `sources` (exit 1, one line naming the song), and a missing `-o` (exit 2, `chart2pdf.py: error: the following arguments are required: -o/--out`). The chart prints each bar's number and, when the song has a tempo, each section's start time; a missing bar is drawn full width and marked "missing", and two or more plain missing bars in a row print as one line with their range (wording from `marks.missing_run`), so runs never cost a song a page or a digit size. An estimated bar carries "≈" and is never folded into a repeat or section reference; a section that repeats an earlier one is one reference line unless `--expand-sections` draws it out (`--collapse-sections` is the default and still accepted); a song that fits one page gets larger digits (11 or 12 pt). Header fields and source reports with nothing to show are left out. Details: `skills/bass-tab/SKILL.md`.
 - `python3 skills/bass-tab/scripts/tabgen.py SONG OUT [--bars N] [--cut compact|full]` — Writes the text tab (3 bars per line and the full cut by default; `--cut compact` is the sheet) and prints `bars=N range=A-B malformed=none  widths=[77]` (exit 0). Refuses a 5-string song (exit 2, `tabgen: TITLE is 5-string; render it with chart2pdf.py`). With fewer than two arguments it prints `usage: tabgen.py <song.py> <out.tab> [--bars N]` (exit 2).
 - `python3 skills/bass-tab/scripts/tab2pdf.py TAB [-o OUT] [--paper a4|letter] [--section-break-frac F] [--allow-lossy] [--check]` — Renders a text tab to the long one-bar-wide PDF (A4 by default, next to the tab when `-o` is left out) and prints `wrote OUT  (N bytes)  pages=N  tab_font_pt=N  longest_line=N  blocks=N  mono_lines=N  sections=N  rasterized_runs=N` (exit 0); with `--check` it writes nothing and prints `OK (check, nothing written)  pages=N ...` (exit 0). Refuses a tab with no tab content (exit 2, `refused: no tab content found in TAB`), non-Latin text without Pillow (exit 2, `refused: non-Latin text would print as '?'. Install Pillow (python3 -m venv v && v/bin/pip install pillow) or pass --allow-lossy.`), and a tab line over 77 characters (exit 1, `tab2pdf: longest line is N chars, over the template maximum of 77.` then `Re-render with fewer bars per system (tabgen --bars N).`).
 
@@ -22,20 +22,26 @@ Review: **Unreviewed**
   - Every song is written to the same song file and printed in one layout modeled on Songsterr's tab: one line per string, labeled at left; bar numbers above bars; time signatures where they change; rhythm marks under notes.
   - The layout is adjusted for print: several bars per line, repeats collapsed.
   - The fixture song's compact tab matches its recorded baseline exactly.
-- BAS-2: **Reviewed 2026-11-11** The whole song at a glance <!-- reviewed 5abec8be -->
+- BAS-2: **Unreviewed** The whole song at a glance
   - A bold label where each section starts.
   - A repeated figure is drawn once with its count (x4).
   - A section that repeats an earlier one is one line ("Chorus 2 = Chorus").
   - Chord names sit over their bars, and each lyric under its own bar.
+  - A section starts on a new line and, when the song has a tempo, its label carries its start time.
+  - A repeat count sits above the closing repeat sign, clear of chord names and bar numbers.
+  - A missing bar is drawn full width and marked "missing"; two or more plain missing bars in a row print as one line with their range, cut at each section start.
+  - An estimated bar carries a "≈" sign and is never folded into a repeat or a section reference; repeats and references also stop at a change of chord.
 - BAS-6: **Unreviewed** Only what the sources show
   - Sources are whatever I provide: any URL (such as a video, Songsterr or another tab site, or a lyrics or chord page), screenshots, PDFs, notes.
   - Each bar, chord and lyric comes only from a source I provided and can be traced to it, never from memory or a web search I didn't ask for.
   - A source it can't open or read is never guessed around.
+  - A person reading the source report checks this; no test can: the row only checks the report's format (BAS-8).
 - BAS-7: **Unreviewed** Song header
   - Every chart starts with the same header: title, artist, BPM, key, time signature, tuning, instrument (such as 5-string bass), and every source used.
-  - A header field the sources don't show is left out, never guessed; a missing title still reads "not shown".
+  - A header field with no value follows BAS-10 (the old second bullet of this requirement was merged into BAS-10).
 - BAS-8: **Unreviewed** Source report
-  - Every transcription ends with a short report in a fixed format listing missing bars, bars that are estimates, which source gave each section, and any source it couldn't open or read.
+  - A transcription's report has a fixed format listing missing bars, bars that are estimates, which source gave each section, and any source it couldn't open or read.
+  - The chart prints it after the last stave line; a song with no report, or a report that names no bar, list or source, prints none, and an explicit empty list prints "none".
 - BAS-9: **Reviewed 2026-11-11** Four- and five-string bass <!-- reviewed 399a7de6 -->
   - The tab draws as many string lines as the song's bass has (4 or 5, such as a low B), labeled to match its tuning.
 - BAS-10: **Unreviewed** One format template
@@ -44,10 +50,11 @@ Review: **Unreviewed**
   - A header field with no value is left out, never a blank or a guess; a missing title still reads "not shown".
 
 ### Non-functional
-- BAS-3: **Reviewed 2026-11-11** Fits a printout <!-- reviewed 7e8cd415 -->
+- BAS-3: **Unreviewed** Fits a printout
   - Two US-Letter pages at most, tab digits at 9 pt or more.
   - Repeats collapse and spacing tightens before the font shrinks.
   - A song that still can't fit is refused with a line naming it.
+  - A song that fits one page gets larger digits (over 10 pt).
 - BAS-4: **Reviewed 2026-11-11** Same input, same printout <!-- reviewed 91020a70 -->
   - Rendering the same song file twice gives byte-identical PDFs.
 - BAS-5: **Reviewed 2026-11-11** No silent question marks <!-- reviewed 4ebe8a8d -->
@@ -61,7 +68,7 @@ Review: **Unreviewed**
 
 ## Success metrics
 - Every chart is at most two pages, with the header filled in.
-- No transcription ends without its source report.
+- Every transcription that has a source report prints it.
 
 ## Tests
 
@@ -78,3 +85,4 @@ Review: **Unreviewed**
 | [bas-chart-fit](Tests#t-bas-chart-fit) | requirement | BAS-3 | Given a normal song and a 400-bar song, when each chart is rendered, then the first fits two pages with tab digits at 9 pt or more and the second is refused with a line naming it. | PASS 2026-11-13 |
 | [bas-pdf-same](Tests#t-bas-pdf-same) | requirement | BAS-4 | Given one song file, when the tab PDF and the chart PDF are each rendered twice, then both copies are identical byte for byte. | PASS 2026-11-13 |
 | [bas-nonlatin](Tests#t-bas-nonlatin) | requirement | BAS-5 | Given a tab with a Chinese title and no Pillow installed, when its PDF is rendered, then it is refused unless lossy output is asked for, and written when it is. | PASS 2026-11-13 |
+| [bas-nonlatin-chart](Tests#t-bas-nonlatin-chart) | requirement | BAS-5 | Given a chart song with a Chinese lyric and no Pillow installed, when its PDF is rendered, then it is refused unless lossy output is asked for, and written when it is. | PASS 2026-11-13 |
