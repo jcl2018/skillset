@@ -219,7 +219,7 @@ def plan_units(song, cfg, limit):
         else:
             miss, pos = missing(song), a
             parts = []
-            for lo, hi in missing_runs(song, a, b, miss):
+            for lo, hi in (missing_runs(song, a, b, miss) if getattr(cfg, "runs", True) else []):
                 parts += [("bars", pos, lo - 1), ("gap", lo, hi)]
                 pos = hi + 1
             parts.append(("bars", pos, b))

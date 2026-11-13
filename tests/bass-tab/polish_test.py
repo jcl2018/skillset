@@ -706,7 +706,25 @@ def run_rhythm_room():
            "a run's line keeps room for a rhythm row it never draws")
 
 
+def run_short():
+    """Many two-bar runs: a song that fits two pages with one row per bar is never refused for its runs."""
+    out = ['META = {"title": "Short Runs"}', "BARS = {}", "SECTIONS = {}", "MISSING = []"]
+    for sec in range(14):
+        a = sec * 8 + 1
+        out.append('SECTIONS[%d] = {"name": "S%d", "notes": [], "same_as": None}' % (a, sec))
+        for n in range(a, a + 8):
+            out.append('BARS[%d] = [None] * 8' % n if n in (a + 3, a + 4) else
+                       'BARS[%d] = [{"E": (%d, "")}] + [None] * 7' % (n, n % 11 + 1))
+        out.append("MISSING += [%d, %d]" % (a + 3, a + 4))
+    out.append('REPORT = {"missing": MISSING, "estimates": []}')
+    p = os.path.join(tempfile.mkdtemp(), "short.py")
+    open(p, "w").write("\n".join(out) + "\n")
+    st = render(p)
+    expect(st["pages"] <= 2, "pages=%d" % st["pages"])
+
+
 def c14():
+    run_short()
     run_fixture()
     run_single()
     run_template_checks()

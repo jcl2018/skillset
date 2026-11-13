@@ -346,6 +346,13 @@ def render(song, paper, refs_only=False, template=None, expand=False):
         if len(pages) <= min(MAX_PAGES, cand.pages):
             cfg = cand
             break
+    if cfg is None:        # runs make short gaps longer: never refuse what one row per bar would fit
+        for cand in cands:
+            cand.runs = False
+            pages, lines, notes = paginate(song, cand, w, h)
+            if len(pages) <= min(MAX_PAGES, cand.pages):
+                cfg = cand
+                break
     if cfg is None:
         raise SystemExit("chart2pdf: %s does not fit %d pages at %.0f pt tab digits "
                          "(needs %d). Cut bars or split the song."
