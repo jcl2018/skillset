@@ -707,9 +707,19 @@ def run_rhythm_room():
 
 
 def run_short():
-    """Many two-bar runs: a song that fits two pages with one row per bar is never refused for its runs."""
+    """Many two-bar runs: a song that fits two pages with one row per bar is never refused for its runs,
+    and a short song keeps the rung one row per bar gives it (1 page, 12 pt), never a smaller one."""
+    st = render(short_runs(14))
+    expect(st["pages"] <= 2, "pages=%d" % st["pages"])
+    st = render(short_runs(3))
+    expect((st["pages"], st["tab_font_pt"]) == (1, 12.0),
+           "runs pushed a 1-page 12 pt song to %d page(s) at %s pt" % (st["pages"], st["tab_font_pt"]))
+
+
+def short_runs(sections):
+    """An invented song of 8-bar sections, each with one plain two-bar missing run."""
     out = ['META = {"title": "Short Runs"}', "BARS = {}", "SECTIONS = {}", "MISSING = []"]
-    for sec in range(14):
+    for sec in range(sections):
         a = sec * 8 + 1
         out.append('SECTIONS[%d] = {"name": "S%d", "notes": [], "same_as": None}' % (a, sec))
         for n in range(a, a + 8):
@@ -719,8 +729,7 @@ def run_short():
     out.append('REPORT = {"missing": MISSING, "estimates": []}')
     p = os.path.join(tempfile.mkdtemp(), "short.py")
     open(p, "w").write("\n".join(out) + "\n")
-    st = render(p)
-    expect(st["pages"] <= 2, "pages=%d" % st["pages"])
+    return p
 
 
 def c14():
