@@ -21,7 +21,7 @@ MIN_FS = 9.0                     # tab digits are never smaller (BAS-3)
 REQUIRED = ["missing_text", "title_row.left", "title_row.right", "title_row.size",
             "title_row.right_size", "header", "header_size", "report.heading", "report.size",
             "report.parts", "report.none_text", "section.size", "section.repeat",
-            "section.ref", "section.time", "section.time_size", "section.count_gap", "bar_numbers.size", "marks.missing",
+            "section.ref", "section.time", "section.time_size", "section.count_gap", "bar_numbers.size", "marks.missing", "marks.missing_run",
             "marks.size", "marks.estimate_size", "marks.estimate_room", "staff.label_size", "staff.gap", "staff.clef", "chords.size",
             "lyrics.size", "ladder"]
 SIZES = ["title_row.size", "title_row.right_size", "header_size", "report.size", "section.size", "section.time_size", "section.count_gap",
@@ -36,6 +36,9 @@ def _ns(x):
     if isinstance(x, dict):
         return SimpleNamespace(**{k: _ns(v) for k, v in x.items()})
     return [_ns(v) for v in x] if isinstance(x, list) else x
+
+
+NEW_KEYS = {"marks.missing_run": ' (add under "marks": "missing_run": "bars {a}-{b} missing")'}
 
 
 def _num(v, low=None):
@@ -55,6 +58,22 @@ def _fields(fmt, allowed):
             raise ValueError(name)
 
 
+def _run_text(path, fmt):
+    """marks.missing_run names both {a} and {b}, bare, and nothing else; each refusal says why."""
+    bad = "has a bad value for 'marks.missing_run': "
+    try:
+        fields = [(n, s, c) for _, n, s, c in string.Formatter().parse(fmt) if n is not None]
+    except ValueError:
+        _bad(path, bad + "a brace is not closed (write {{ or }} for a literal brace)")
+    for n, s, c in fields:
+        if n not in ("a", "b"):
+            _bad(path, bad + "only {a} and {b} are allowed, not {%s}" % n)
+        if s or c:
+            _bad(path, bad + "{%s} takes no format spec or conversion" % n)
+    if {n for n, _, _ in fields} != {"a", "b"}:
+        _bad(path, bad + "it must name both {a} and {b}, so the chart shows the run's range")
+
+
 def load(path=None):
     path = path or DEFAULT
     try:
@@ -68,7 +87,7 @@ def load(path=None):
         cur = raw
         for part in key.split("."):
             if not isinstance(cur, dict) or part not in cur:
-                _bad(path, "is missing key '%s'" % key)
+                _bad(path, "is missing key '%s'%s" % (key, NEW_KEYS.get(key, "")))
             cur = cur[part]
     try:
         for r in raw["ladder"]:
@@ -92,10 +111,11 @@ def load(path=None):
         texts = [raw["title_row"]["left"], raw["title_row"]["right"], raw["missing_text"],
                  raw["report"]["heading"], raw["report"]["none_text"]]
         texts += [h[k] for h in raw["header"] for k in ("field", "label")]
-        texts.append(raw["marks"]["missing"])
+        texts += [raw["marks"]["missing"], raw["marks"]["missing_run"]]
         texts += [p[k] for p in raw["report"]["parts"] for k in ("key", "label")]
         if not all(isinstance(x, str) for x in texts):
             raise ValueError("text")
+        _run_text(path, raw["marks"]["missing_run"])
         _fields(raw["section"]["repeat"], {"n"})
         _fields(raw["section"]["ref"], {"other", "a", "b"})
         _fields(raw["section"]["time"], {"t"})

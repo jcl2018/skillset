@@ -44,7 +44,7 @@ if python3 "$scripts/chart2pdf.py" "$here/chart-huge.py" -o "$out/h.pdf" >/dev/n
 for c in header report five template; do python3 "$here/v2_test.py" "$c" >/dev/null || fail "v2 $c check failed"; done
 
 # 3e. Chart polish: the nine layout fixes and the estimate, chord and report guards, one check each (invented songs).
-for c in 1 2 3 4 5 6 7 8 9 10 11 12 13; do python3 "$here/polish_test.py" "$c" >/dev/null || fail "chart polish $c check failed"; done
+for c in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do python3 "$here/polish_test.py" "$c" >/dev/null || fail "chart polish $c check failed"; done
 python3 "$here/polish_test.py" count >/dev/null || fail "polish CASES, this loop and the chart-polish regression rows disagree"
 
 # 4. Every script stays under 20 KB.

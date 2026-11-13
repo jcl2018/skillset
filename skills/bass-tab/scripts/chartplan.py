@@ -79,6 +79,26 @@ def missing(song):
     return set((song.get("report") or {}).get("missing") or [])
 
 
+def plain(song, n):
+    """A missing bar that may join a run: no notes, no chord name, no lyric."""
+    return not song["chords"].get(n) and not song["lyrics"].get(n) \
+        and not any(song["bars"][n])
+
+
+def missing_runs(song, a, b, miss):
+    """Maximal (lo, hi) runs, hi > lo, of plain missing bars within a..b. One linear pass; a run
+    never crosses a section start because the caller passes one section's range."""
+    runs, lo = [], None
+    for n in range(a, b + 2):
+        if n <= b and n in miss and plain(song, n):
+            lo = n if lo is None else lo
+        else:
+            if lo is not None and n - 1 > lo:
+                runs.append((lo, n - 1))
+            lo = None
+    return runs
+
+
 def estimates(song):
     """REPORT["estimates"] bars: guessed, so each keeps its own sign and is never folded away."""
     return set((song.get("report") or {}).get("estimates") or [])
@@ -197,14 +217,35 @@ def plan_units(song, cfg, limit):
                           "text": cfg.t.section.ref.format(other=song["sections"][ref]["name"],
                                                            a=ranges[ref][0], b=ranges[ref][1])})
         else:
-            for k, (lo, p, reps) in enumerate(collapse(list(range(a, b + 1)), song, cfg, starts, limit, fold)):
-                units.append({"kind": "bars", "bars": list(range(lo, lo + p)), "reps": reps,
-                              "label": name if lo == a else None, "sec": s,
-                              "time": shown_time(song, a, cfg) if lo == a else "",
-                              "width": sum(bar_width(x, song, cfg) for x in range(lo, lo + p))
-                              + (18 if reps > 1 else 0)})
+            miss, pos = missing(song), a
+            parts = []
+            for lo, hi in (missing_runs(song, a, b, miss) if getattr(cfg, "runs", True) else []):
+                parts += [("bars", pos, lo - 1), ("gap", lo, hi)]
+                pos = hi + 1
+            parts.append(("bars", pos, b))
+            for k, (kind, x, y) in enumerate(parts):
+                if y < x:
+                    continue
+                if kind == "gap":
+                    units.append({"kind": "gap", "bars": list(range(x, y + 1)), "reps": 1,
+                                  "label": name if x == a else None, "sec": s,
+                                  "time": shown_time(song, a, cfg) if x == a else "",
+                                  "text": cfg.t.marks.missing_run.format(a=x, b=y), "width": limit})
+                    continue
+                for lo, p, reps in collapse(list(range(x, y + 1)), song, cfg, starts, limit, fold):
+                    units.append({"kind": "bars", "bars": list(range(lo, lo + p)), "reps": reps,
+                                  "label": name if lo == a else None, "sec": s, "after_gap": x != a,
+                                  "before_gap": k + 1 < len(parts),
+                                  "time": shown_time(song, a, cfg) if lo == a else "",
+                                  "width": sum(bar_width(z, song, cfg) for z in range(lo, lo + p))
+                                  + (18 if reps > 1 else 0)})
         seen.append(s)
     return units
+
+
+def continues(g):
+    """A group that follows a run in its own section is that section's tail."""
+    return g[0].get("after_gap", False)
 
 
 def pack(units, avail, lab_size=10.0, time_size=8.0):
@@ -219,13 +260,14 @@ def pack(units, avail, lab_size=10.0, time_size=8.0):
         else:
             groups.append([u])
     for g in groups:
-        if g[0]["kind"] == "ref":
+        if g[0]["kind"] in ("ref", "gap"):
             if cur:
                 lines.append(cur)
             lines.append(g)
             cur, x, label_end, tail = [], 0.0, -1.0, False
             continue
-        if cur and (tail or x + sum(u["width"] for u in g) > avail or x < label_end):
+        whole = not g[0].get("before_gap", False)     # bars that run into a run are not a whole section
+        if cur and (tail or not whole or x + sum(u["width"] for u in g) > avail or x < label_end):
             lines.append(cur)
             cur, x, label_end, tail = [], 0.0, -1.0, False
         for u in g:
@@ -237,6 +279,8 @@ def pack(units, avail, lab_size=10.0, time_size=8.0):
                 label_end = x + string_width(u["label"], "F2", lab_size) + 6 + (
                     string_width(u["time"], "F3", time_size) + 4 if u["time"] else 0)
             x += u["width"]
+        if continues(g):
+            tail = True
     if cur:
         lines.append(cur)
     return lines
