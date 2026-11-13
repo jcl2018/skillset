@@ -1,4 +1,4 @@
-"""Bass-tab v2 checks on invented songs. Usage: v2_test.py header|report|five|template"""
+"""Bass-tab v2 checks on invented songs. Usage: v2_test.py header|report|five|template|nonlatin"""
 import json
 import os
 import subprocess
@@ -9,6 +9,7 @@ here = os.path.dirname(os.path.abspath(__file__))
 scripts = os.path.join(here, "..", "..", "skills", "bass-tab", "scripts")
 sys.path.insert(0, scripts)
 import chart2pdf  # noqa: E402
+import pdfdraw  # noqa: E402
 
 calls = []
 _text, _rule = chart2pdf.PDF.text, chart2pdf.PDF.rule
@@ -372,7 +373,22 @@ def template():
     print("template ok")
 
 
-CASES = {"header": header, "report": report, "five": five, "template": template}
+def nonlatin():
+    """BAS-5 for the chart: a non-Latin lyric is refused without Pillow, written with it or --allow-lossy."""
+    src = open(os.path.join(here, "chart-song.py"), encoding="utf-8").read()
+    song = os.path.join(tempfile.mkdtemp(), "cjk-song.py")
+    open(song, "w", encoding="utf-8").write(src + '\nLYRICS[9] = "\u6d4b\u8bd5"\n')
+    dest = os.path.join(tempfile.mkdtemp(), "out.pdf")
+    have = pdfdraw.RasterCache().available()  # Pillow and a CJK font
+    if not have:
+        refused("chart2pdf.py", song, "refused: non-Latin")
+    rc, out = cli(os.path.join(scripts, "chart2pdf.py"), song, "-o", dest, *([] if have else ["--allow-lossy"]))
+    if rc != 0 or not os.path.exists(dest) or "Traceback" in out:
+        fail("a non-Latin lyric chart was not written: rc=%d %r" % (rc, out))
+    print("nonlatin ok")
+
+
+CASES = {"header": header, "report": report, "five": five, "template": template, "nonlatin": nonlatin}
 if len(sys.argv) != 2 or sys.argv[1] not in CASES:
     fail("usage: v2_test.py %s" % "|".join(CASES))
 CASES[sys.argv[1]]()

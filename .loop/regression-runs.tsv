@@ -4,6 +4,7 @@ bas-chart-layout	PASS	2026-11-13
 bas-five-string	PASS	2026-11-13	
 bas-header	PASS	2026-11-13	
 bas-nonlatin	PASS	2026-11-13	
+bas-nonlatin-chart	PASS	2026-11-13	
 bas-pdf-same	PASS	2026-11-13	
 bas-source-report	PASS	2026-11-13	
 bas-tab-baseline	PASS	2026-11-13	
@@ -22,5 +23,8 @@ chart-polish-6	PASS	2026-11-13
 chart-polish-7	PASS	2026-11-13	
 chart-polish-8	PASS	2026-11-13	
 chart-polish-9	PASS	2026-11-13	
+docs-consolidate-1	PASS	2026-11-13	
+docs-consolidate-2	PASS	2026-11-13	
+docs-consolidate-3	PASS	2026-11-13	
 repo-public	PASS	2026-11-13	
 repo-suite	PASS	2026-11-13	
