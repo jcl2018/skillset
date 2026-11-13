@@ -46,7 +46,7 @@ Review: **Unreviewed**
 - BAS-9: **Reviewed 2026-11-11** Four- and five-string bass <!-- reviewed 399a7de6 -->
   - The tab draws as many string lines as the song's bass has (4 or 5, such as a low B), labeled to match its tuning.
 - BAS-10: **Unreviewed** One format template
-  - One template file defines the printed layout: header fields and order; how a section starts and how repeats and repeated sections show; the Songsterr-style staff; where chords and lyrics sit; spacing and fonts.
+  - One template file defines the printed layout: header fields and order; how a section starts and how repeats and repeated sections show; the Songsterr-style staff; where chords and lyrics sit, including the smallest size a long lyric shrinks to; spacing and fonts.
   - Every song renders through it, so changing it changes every song the same way.
   - A header field with no value is left out, never a blank or a guess; a missing title still reads "not shown".
 
