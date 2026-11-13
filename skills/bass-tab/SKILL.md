@@ -57,7 +57,7 @@ ends with the source report. **`templates/chart-format.json` is the one layout f
 order, the report, section and repeat text, the staff, chord and lyric sizes, the fitting ladder. Change
 it and every song changes; `--template PATH` renders through another copy. A 5-string song renders only
 as a chart in this version: `tabgen.py` refuses it with a line saying so.
-Each bar carries its number, and each section label carries its start time when the song has a tempo. A missing bar is drawn full width and marked "missing"; an estimated bar carries a "≈" sign. A section starts on a new line unless the whole of it fits beside the section before; the repeat count sits above the closing repeat sign. A song that fits one page uses larger tab digits (11 or 12 pt).
+Each bar carries its number, and each section label carries its start time when the song has a tempo. A missing bar is drawn full width and marked "missing"; two or more missing bars in a row with no notes, chord or lyric print as one full-width line marked with their range (`marks.missing_run`, `bars {a}-{b} missing` by default, and its first bar number), cut at each section start, unless one row per missing bar fits the song on fewer pages or run lines would not fit; an estimated bar carries a "≈" sign. A section starts on a new line unless the whole of it fits beside the section before; the repeat count sits above the closing repeat sign. A song that fits one page uses larger tab digits (11 or 12 pt).
 Needs Pillow for non-Latin lyrics or titles (see above). `--collapse-sections` is now the default and only kept for old command lines.
 
 The long, one-bar-wide PDF is still available: `tabgen.py ... --cut compact` then
