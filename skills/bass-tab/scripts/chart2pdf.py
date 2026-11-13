@@ -341,14 +341,19 @@ def render(song, paper, refs_only=False, template=None, expand=False):
     if not cands:
         raise SystemExit("chart2pdf: template %s has no secref rung for --collapse-sections"
                          % (template or chartformat.DEFAULT))
-    for cand in cands:     # runs make short gaps longer: at each rung, one row per bar is tried too
-        for runs in (True, False):
-            cand.runs = runs
-            pages, lines, notes = paginate(song, cand, w, h)
-            if len(pages) <= min(MAX_PAGES, cand.pages):
-                cfg = cand
-                break
-        if cfg is not None:
+    has_missing = bool(chartplan.missing(song))
+    for cand in cands:     # runs make short gaps longer: they never cost a rung or a page over one row per bar
+        rows = None
+        if has_missing:
+            cand.runs = False
+            rows = paginate(song, cand, w, h)
+        cand.runs = True
+        pages, lines, notes = paginate(song, cand, w, h)
+        if rows and (len(pages) > min(MAX_PAGES, cand.pages) or len(rows[0]) < len(pages)):
+            cand.runs = False
+            pages, lines, notes = rows
+        if len(pages) <= min(MAX_PAGES, cand.pages):
+            cfg = cand
             break
     if cfg is None:
         raise SystemExit("chart2pdf: %s does not fit %d pages at %.0f pt tab digits "

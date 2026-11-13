@@ -708,24 +708,28 @@ def run_rhythm_room():
 
 def run_short():
     """Many two-bar runs: a song that fits two pages with one row per bar is never refused for its runs,
-    and a short song keeps the rung one row per bar gives it (1 page, 12 pt), never a smaller one."""
-    st = render(short_runs(14))
+    and a song keeps the pages and size one row per bar gives it (main's result), never more or smaller."""
+    st = render(short_runs([(8, 3, 2)] * 14))
     expect(st["pages"] <= 2, "pages=%d" % st["pages"])
-    st = render(short_runs(3))
-    expect((st["pages"], st["tab_font_pt"]) == (1, 12.0),
-           "runs pushed a 1-page 12 pt song to %d page(s) at %s pt" % (st["pages"], st["tab_font_pt"]))
+    for shape, want in (([(8, 3, 2)] * 3, (1, 12.0)),
+                        ([(7, 1, 2), (14, 6, 2), (15, 1, 2), (16, 10, 2), (15, 9, 5)], (1, 10.0))):
+        st = render(short_runs(shape))
+        expect((st["pages"], st["tab_font_pt"]) == want, "runs gave %d page(s) at %s pt where one row per bar "
+               "gives %d at %s" % (st["pages"], st["tab_font_pt"], want[0], want[1]))
 
 
-def short_runs(sections):
-    """An invented song of 8-bar sections, each with one plain two-bar missing run."""
+def short_runs(shape):
+    """An invented song: one section per (length, offset, run) with a plain missing run of RUN bars at OFFSET."""
     out = ['META = {"title": "Short Runs"}', "BARS = {}", "SECTIONS = {}", "MISSING = []"]
-    for sec in range(sections):
-        a = sec * 8 + 1
+    a = 1
+    for sec, (length, off, run) in enumerate(shape):
         out.append('SECTIONS[%d] = {"name": "S%d", "notes": [], "same_as": None}' % (a, sec))
-        for n in range(a, a + 8):
-            out.append('BARS[%d] = [None] * 8' % n if n in (a + 3, a + 4) else
+        gap = range(a + off, a + off + run)
+        for n in range(a, a + length):
+            out.append('BARS[%d] = [None] * 8' % n if n in gap else
                        'BARS[%d] = [{"E": (%d, "")}] + [None] * 7' % (n, n % 11 + 1))
-        out.append("MISSING += [%d, %d]" % (a + 3, a + 4))
+        out.append("MISSING += %r" % list(gap))
+        a += length
     out.append('REPORT = {"missing": MISSING, "estimates": []}')
     p = os.path.join(tempfile.mkdtemp(), "short.py")
     open(p, "w").write("\n".join(out) + "\n")
