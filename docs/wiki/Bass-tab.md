@@ -67,7 +67,7 @@ Review: **Unreviewed**
 
 | Test | Kind | Guards | Checks | Last result |
 |---|---|---|---|---|
-| [bas-tab-baseline](Tests#t-bas-tab-baseline) | requirement | BAS-1 | Given the fixture song, when its compact text tab is generated, then it matches the recorded baseline byte for byte. | PASS 2026-11-12 |
+| [bas-tab-baseline](Tests#t-bas-tab-baseline) | requirement | BAS-1 | Given the fixture song, when its compact text tab is generated, then it matches the recorded baseline byte for byte. | PASS 2026-11-13 |
 | [bas-chart-layout](Tests#t-bas-chart-layout) | requirement | BAS-2 | Given an invented song with sections, repeats and lyrics, when its chart is rendered, then each section has a bold label, the repeated bars print once with a count, and each lyric sits under its own bar. | PASS 2026-11-12 |
 | [bas-sources-only](Tests#t-bas-sources-only) | requirement | BAS-6 | Given sources for a song, when the agent writes the song file, then each bar, chord and lyric comes only from a cited source, which a person reading the source report checks; the nightly run checks the report's format (BAS-8). | not run |
 | - | requirement | BAS-6 | no passing test | not enforced |
@@ -75,6 +75,6 @@ Review: **Unreviewed**
 | [bas-source-report](Tests#t-bas-source-report) | requirement | BAS-8 | Given a song with a source report, when its chart is rendered, then missing bars, estimates and the source per section print after the last stave line, a missing part reads "not shown", and a bad report key is refused. | PASS 2026-11-12 |
 | [bas-five-string](Tests#t-bas-five-string) | requirement | BAS-9 | Given a 5-string and a 4-string song, when each chart is rendered, then the first draws five stave lines labeled G D A E B and the second four labeled G D A E, and the text tab refuses the 5-string song. | PASS 2026-11-12 |
 | [bas-template](Tests#t-bas-template) | requirement | BAS-10 | Given a changed copy of the format template, when two songs are rendered through it, then the header order, missing text, repeat format, section size and line gap all follow it, and a bad template is refused by name. | PASS 2026-11-12 |
-| [bas-chart-fit](Tests#t-bas-chart-fit) | requirement | BAS-3 | Given a normal song and a 400-bar song, when each chart is rendered, then the first fits two pages with tab digits at 9 pt or more and the second is refused with a line naming it. | PASS 2026-11-12 |
-| [bas-pdf-same](Tests#t-bas-pdf-same) | requirement | BAS-4 | Given one song file, when the tab PDF and the chart PDF are each rendered twice, then both copies are identical byte for byte. | PASS 2026-11-12 |
-| [bas-nonlatin](Tests#t-bas-nonlatin) | requirement | BAS-5 | Given a tab with a Chinese title and no Pillow installed, when its PDF is rendered, then it is refused unless lossy output is asked for, and written when it is. | PASS 2026-11-12 |
+| [bas-chart-fit](Tests#t-bas-chart-fit) | requirement | BAS-3 | Given a normal song and a 400-bar song, when each chart is rendered, then the first fits two pages with tab digits at 9 pt or more and the second is refused with a line naming it. | PASS 2026-11-13 |
+| [bas-pdf-same](Tests#t-bas-pdf-same) | requirement | BAS-4 | Given one song file, when the tab PDF and the chart PDF are each rendered twice, then both copies are identical byte for byte. | PASS 2026-11-13 |
+| [bas-nonlatin](Tests#t-bas-nonlatin) | requirement | BAS-5 | Given a tab with a Chinese title and no Pillow installed, when its PDF is rendered, then it is refused unless lossy output is asked for, and written when it is. | PASS 2026-11-13 |
