@@ -197,6 +197,39 @@ def draw_bar(pdf, song, cfg, num, x0, bw, ys, g):
                 pdf.beam(xs[i] - 0.3, end + 2.3, xs[i] + 3.5, h=1.5)
 
 
+def draw_gap(pdf, song, cfg, u, y, avail, x_left):
+    """A run of missing bars: one full-width empty stave, the range in the middle, the first bar's number."""
+    g, t = gap(cfg), cfg.t
+    cy = y - 3
+    lab_y = cy - 10
+    if u["label"]:
+        cy -= 12
+    num_y, cy = cy - t.bar_numbers.size, cy - t.bar_numbers.size - 2
+    rows = song["rows"][::-1]
+    ys = [cy - 5 - g * i for i in range(len(rows))]
+    pdf.rule(x_left, ys[0], x_left, ys[-1])
+    for yy, row in zip(ys, rows):
+        pdf.text(x_left - label_w(song, cfg) - 1.5,
+                 yy - t.staff.label_size * 0.33, row_label(song["meta"], row), "F3", t.staff.label_size)
+        pdf.rule(x_left, yy, x_left + avail, gray=0.45)
+    pdf.stem(x_left, ys[-1] - 0.5, ys[0] + 0.5, w=0.7)
+    pdf.stem(x_left + avail, ys[-1] - 0.5, ys[0] + 0.5, w=0.7)
+    if u["label"]:
+        pdf.text(x_left + 1, lab_y, u["label"], "F2", t.section.size)
+        if u["time"]:
+            pdf.text(x_left + 5 + string_width(u["label"], "F2", t.section.size), lab_y,
+                     u["time"], "F3", t.section.time_size, gray=0.4)
+    pdf.text(x_left + 1.5, num_y, str(u["bars"][0]), "F3", t.bar_numbers.size, gray=0.4)
+    ms = t.marks.size
+    mk, _ = fit_to_width(u["text"], "F4", ms, avail - 12)
+    mw, my = string_width(mk, "F4", ms), (ys[0] + ys[-1]) / 2.0
+    pdf._ops.append(b"1 g %.2f %.2f %.2f %.2f re f\n" % (x_left + avail / 2 - mw / 2 - 2, my - ms * 0.6, mw + 4, ms * 1.3))
+    pdf.text(x_left + avail / 2 - mw / 2, my - ms * 0.33, mk, "F4", ms, gray=0.35)
+    clef, step = 7.5, (ys[0] - ys[-1]) / 3.0
+    for k, ch in enumerate("TAB" if t.staff.clef else ""):
+        pdf.text(MARGIN + 1.5, ys[0] - (k + 0.5) * step - clef * 0.33, ch, "F2", clef)
+
+
 def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
     g, t = gap(cfg), cfg.t
     ssz = t.section.size
@@ -212,6 +245,9 @@ def draw_line(pdf, song, cfg, ln, y, lh, usable, last, x_left):
         pdf.text(x, y - 11, u["text"], "F4", 9.0, gray=0.3)
         return
     avail = usable - gutter(cfg, song)
+    if ln[0]["kind"] == "gap":
+        draw_gap(pdf, song, cfg, ln[0], y, avail, x_left)
+        return
     fixed = sum(18 for u in ln if u["reps"] > 1)
     sum_bars = sum(u["width"] for u in ln) - fixed
     f = 1.0 if last else max(1.0, min(1.4, (avail - fixed) / sum_bars))

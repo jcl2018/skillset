@@ -12,4 +12,7 @@ Frozen. A wrong done line needs a new goal.
 
 ## Verify by hand
 
-<!-- Numbered steps for a person, each with an Expect: line. A release needs this. -->
+1. Run `python3 skills/bass-tab/scripts/chart2pdf.py tests/bass-tab/polish-run.py -o /tmp/run.pdf` and open the PDF.
+   Expect: section B shows one full-width empty stave reading "bars 9-38 missing", bar 5 still shows a single "missing" mark, and bar 47 keeps its chord name.
+2. Run `python3 tests/bass-tab/polish_test.py 14`.
+   Expect: it prints "14 ok".

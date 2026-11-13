@@ -36,3 +36,4 @@
 | <a id="t-chart-polish-11"></a>chart-polish-11 | requirement | done line chart-polish:1 | PASS | 2026-11-12 | [CI 2026-11-12](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-12) | 2026-11-12 |
 | <a id="t-chart-polish-12"></a>chart-polish-12 | requirement | done line chart-polish:1 | PASS | 2026-11-12 | [CI 2026-11-12](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-12) | 2026-11-12 |
 | <a id="t-chart-polish-13"></a>chart-polish-13 | requirement | done line chart-polish:1 | PASS | 2026-11-12 | [CI 2026-11-12](https://github.com/jcl2018/skillset/actions/workflows/regression.yml?query=created%3A2026-11-12) | 2026-11-12 |
+| <a id="t-chart-polish-14"></a>chart-polish-14 | requirement | done line missing-runs:1 | not run | - | local | 2026-11-12 |

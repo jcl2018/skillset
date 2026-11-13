@@ -1,4 +1,4 @@
-"""Chart polish checks on invented songs. Usage: polish_test.py 1|2|...|13|count (one per layout fix;
+"""Chart polish checks on invented songs. Usage: polish_test.py 1|2|...|14|count (one per layout fix;
 10-12 add the estimate, chord and report guards, each proved by mutants of the production functions;
 count checks that CASES, run.sh and the regression rows agree)."""
 import os
@@ -109,7 +109,7 @@ def missing_cost():
         if n % 12 == 1:
             out.append('SECTIONS[%d] = {"name": "P%d", "notes": [], "same_as": None}' % (n, n))
         out.append('BARS[%d] = [{"E": (%d, "")}] + [None] * 7' % (n, n % 11 + 1))
-    out.append('REPORT = {"missing": %r, "estimates": %r}' % (list(range(5, 121, 6)), list(range(3, 121, 6))))
+    out.append('REPORT = {"missing": %r, "estimates": %r}' % (sorted(set(range(5, 121, 6)) | set(range(100, 111))), [n for n in range(3, 121, 6) if n not in range(100, 111)]))
     p = os.path.join(tempfile.mkdtemp(), "cost.py")
     open(p, "w").write("\n".join(out) + "\n")
     calls, real = [0], chartplan.natural
@@ -557,6 +557,107 @@ def c13():
     print("13 ok")
 
 
+def run_template(text):
+    """A copy of the default template with marks.missing_run set to TEXT (None removes the key)."""
+    import json
+    raw = json.load(open(chart2pdf.chartformat.DEFAULT, encoding="utf-8"))
+    if text is None:
+        raw["marks"].pop("missing_run", None)
+    else:
+        raw["marks"]["missing_run"] = text
+    p = os.path.join(tempfile.mkdtemp(), "t.json")
+    json.dump(raw, open(p, "w"))
+    return p
+
+
+def run_lines():
+    """Bar ranges per line of polish-run.py, a gap as ('gap', a, b)."""
+    return [[("gap", u["bars"][0], u["bars"][-1]) if u["kind"] == "gap" else (u["bars"][0], u["bars"][-1])
+             for u in ln] for ln in LINES]
+
+
+def run_fixture():
+    st = render("polish-run.py")
+    s, t = strs(), tpl()
+    for want in ("bars 9-38 missing", "bars 49-50 missing", "bars 51-52 missing"):
+        expect(s.count(want) == 1, "%r printed %d times" % (want, s.count(want)))
+    expect(s.count(t.marks.missing) == 4, "expected 4 per-bar missing marks (bars 5, 45, 46, 47), saw %d"
+           % s.count(t.marks.missing))
+    nums = [x[2] for x in TXT if x[3] == "F3" and x[4] == t.bar_numbers.size]
+    expect(not any(str(n) in nums for n in range(10, 39)), "a bar number inside the run 9-38 is printed")
+    expect("Am" in s and "la" in s, "the chord on bar 47 or the lyric on bar 45 is not printed")
+    gaps = {u["bars"][0]: u for ln in LINES for u in ln if u["kind"] == "gap"}
+    expect(sorted(gaps) == [9, 49, 51], "gap runs are %r, not [9, 49, 51]" % sorted(gaps))
+    expect(gaps[9]["label"] == "B" and gaps[9]["time"], "the run 9-38 lost its section label or time")
+    expect(gaps[51]["label"] == "D" and gaps[49]["label"] is None, "a run's label is not the section's own")
+    for ln in LINES:       # c5's rule: no section starts on the line holding another's last bars
+        tail = ln[0]["label"] is None
+        expect(not any(u["label"] for u in ln[1:] if tail), "a section starts beside the previous one's tail: %r" % run_lines())
+    for ln in LINES:
+        expect(not any(u["kind"] == "gap" for u in ln) or len(ln) == 1, "a gap shares its line")
+    expect(st["lines"] == len(LINES) == 7, "lines=%d: %r" % (st["lines"], run_lines()))
+    song = chart2pdf.read_song(os.path.join(here, "polish-run.py"))
+    cfg = chart2pdf.ladder(tpl())[0]
+    wide = max(chartplan.bar_width(n, song, cfg) for n in song["bars"] if n not in chartplan.missing(song))
+    expect(chartplan.bar_width(5, song, cfg) >= wide - 0.01, "the lone missing bar 5 is narrower than a real bar")
+
+
+def run_single():
+    """One missing bar: the same PDF bytes as before this change, and one per-bar mark."""
+    import hashlib
+    data, _ = chart2pdf.render(chart2pdf.read_song(os.path.join(here, "v2-report.py")), "letter")
+    want = open(os.path.join(here, "missing-one.sha256")).read().strip()
+    expect(hashlib.sha256(data).hexdigest() == want, "a single missing bar's chart changed")
+    render("v2-report.py")
+    expect(strs().count(tpl().marks.missing) == 1 and not any("bars" in x and "missing" in x for x in strs()),
+           "a lone missing bar is not one per-bar mark")
+
+
+def run_template_checks():
+    for bad in ("{c}", "{a:>3}", "{a.x}"):
+        try:
+            chart2pdf.chartformat.load(run_template(bad))
+        except SystemExit as e:
+            expect("marks.missing_run" in str(e), "bad wording %r refused without naming the key: %s" % (bad, e))
+            continue
+        expect(False, "wording %r was accepted" % bad)
+    try:
+        chart2pdf.chartformat.load(run_template(None))
+    except SystemExit as e:
+        expect("marks.missing_run" in str(e) and "bars {a}-{b} missing" in str(e),
+               "the missing-key refusal gives no line to add: %s" % e)
+    else:
+        expect(False, "a template without marks.missing_run was accepted")
+    render("polish-run.py", template=run_template("gap {a} to {b}"))
+    expect("gap 9 to 38" in strs(), "the template's wording is not what the chart prints")
+    render("polish-run.py", template=run_template("x" * 400 + " {a}-{b}"))
+    usable = chart2pdf.PAPERS["letter"][0] - 2 * chart2pdf.MARGIN
+    long_ = [t for t in TXT if t[2].startswith("xxx")]
+    expect(long_ and all(t[0] + chart2pdf.string_width(t[2], t[3], t[4]) <= usable + chart2pdf.MARGIN for t in long_),
+           "a long wording runs off the stave")
+
+
+def run_notes():
+    song = chart2pdf.read_song(os.path.join(here, "polish-run.py"))
+    song["bars"][12] = [{"E": (3, "")}] + [None] * 7      # a "missing" bar that holds notes stays a bar
+    cfg = chart2pdf.ladder(tpl())[0]
+    runs = chartplan.missing_runs(song, 9, 40, chartplan.missing(song))
+    expect(runs == [(9, 11), (13, 38)], "a bar with notes was swallowed into a run: %r" % runs)
+
+
+def c14():
+    run_fixture()
+    run_single()
+    run_template_checks()
+    run_notes()
+    missing_cost()
+    mutate(chartplan, "missing_runs", lambda *a, **k: [], run_fixture, "no run is ever found")
+    mutate(chartplan, "plain", lambda *a, **k: True, lambda: (run_fixture(), run_notes()),
+           "a bar with a chord, lyric or notes joins a run")
+    mutate(chartplan, "continues", lambda g: False, run_fixture, "the tail flag is lost after a gap")
+    print("14 ok")
+
+
 def counts(cases, run_sh, tsv):
     """The numbers 1..N that CASES, the run.sh loop and the chart-polish rows each name."""
     loop = re.search(r"for c in ([0-9 ]+); do python3 .*polish_test\.py", run_sh)
@@ -585,9 +686,9 @@ def c_count():
     print("count ok (%d cases)" % len(a))
 
 
-CASES = {str(i + 1): f for i, f in enumerate((c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13))}
+CASES = {str(i + 1): f for i, f in enumerate((c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14))}
 if len(sys.argv) != 2 or sys.argv[1] not in list(CASES) + ["count"]:
-    fail("usage: polish_test.py 1|2|3|4|5|6|7|8|9|10|11|12|13|count")
+    fail("usage: polish_test.py 1|2|3|4|5|6|7|8|9|10|11|12|13|14|count")
 try:
     c_count() if sys.argv[1] == "count" else CASES[sys.argv[1]]()
 except AssertionError as e:
